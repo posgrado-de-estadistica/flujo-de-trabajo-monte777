@@ -1,0 +1,20 @@
+---
+title: "Flujo de trabajo en Estadística"
+author: "Pedro Montenegro"
+date: "28/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(workflowr)
+```
+
+```{r}
+wflow_git_config(user.name = "monte777", user.email = "montenegromasis@hotmail.com")
+wflow_start("myproject")
+```
+
