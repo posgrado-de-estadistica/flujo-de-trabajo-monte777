@@ -1,0 +1,337 @@
+---
+title: "Clase3"
+author: "Pedro Montenegro"
+date: "29/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#librerías
+library(sp)
+library(dplyr)
+library(sf)
+library(spData)
+library(here)
+library(rgdal)
+library(raster)
+```
+
+
+# El enlace para compartir info
+
+https://pad.carpentries.org/lab1
+
+```{r}
+name <- LETTERS[1:10]
+longitude <- c(-111.6, -120.4, -116.7, -113.5, -115.5, 
+               -120.8, -119.5, -113.7, -113.7, -110.7)
+
+latitude  <- c(45.3, 42.6, 38.9, 42.1, 35.7, 38.9,
+               36.2, 39, 41.6, 39.9)
+
+estaciones<-cbind(longitude, latitude)
+set.seed(1)
+
+precip<-(runif(length(latitude))*10)^3
+psize<- 1 +precip/500
+  
+plot(estaciones, cex=psize,pch=20,col= "blue", main= "Precipitacion (mm/año)")
+text(estaciones, name, pos=4)
+#leyenda
+
+breaks <- c(100,500,1000,2000)
+legend("topright", legend = breaks,pch = 20, 
+       pt.cex = psize, col="blue", bg= "gray")
+
+lon <- c(-116.8, -114.2, -112.9, -111.9, 
+         -114.2, -115.4, -117.7)
+lat  <- c(41.3, 42.9, 42.4, 39.8, 37.6, 38.3, 37.6)
+x <- cbind(lon, lat)
+
+plot(estaciones, main= "Precipitación (mm/año)")
+polygon(x,col = "blue", border= "light blue")
+lines(estaciones, lw= 3, col="red")
+points(x,cex=2, pch=20)
+points(estaciones, cex=psize,col="red")
+```
+
+
+```{r}
+wst<-data.frame(longitude, latitude, name, precip)
+wst
+```
+
+```{r}
+longitude <- c(-116.7, -120.4, -116.7, -113.5, -115.5, -120.8, -119.5, -113.7, -113.7, -110.7)
+latitude <- c(45.3, 42.6, 38.9, 42.1, 35.7, 38.9, 36.2, 39, 41.6, 36.9)
+lonlat <- cbind(longitude, latitude)
+
+pts<- SpatialPoints(lonlat)
+class(pts)
+
+showDefault(pts)
+```
+
+Que es bbox, son el marco max lat, lont, y minimos, además las proyecciones.
+
+Como se puede co¿ambiar la proyeccion 
+
+```{r}
+crdref<- CRS("+proj=longlat +datum=WGS84")
+ptsdf <- SpatialPoints(lonlat, proj4string =  crdref)
+
+df<- data.frame(ID=1:nrow(lonlat),precip= (latitude -30)^30)
+
+ptsdf<- SpatialPointsDataFrame(pts, data= df)
+ptsdf
+
+str(ptsdf)
+```
+
+
+```{r}
+lon <- c(-116.8, -114.2, -112.9, -111.9, 
+         -114.2, -115.4, -117.7)
+lat  <- c(41.3, 42.9, 42.4, 39.8, 37.6, 38.3, 37.6)
+x <- cbind(lon, lat)
+
+
+lns <- splines(lonlat, crs= crdref)
+lns
+
+pols<- spPolygons(lonlat, crs= crdref)
+pols
+
+lon <- c(-116.8, -114.2, -112.9, -111.9, -114.2, -115.4, -117.7)
+lat <- c(41.3, 42.9, 42.4, 39.8, 37.6, 38.3, 37.6) 
+lonlat <- cbind(lon, lat)
+
+plot(pols, axes= TRUE, las= 1)
+plot(pols, border= "blue", col= "yellow",lwd=3, add=TRUE)
+points(pts, col= "red", pch=20, cex=3)
+
+```
+
+CRear un objeto raster
+Es una grilla
+
+shp se puede convertir en un raster
+
+Códigos geograficos más comunes.
+
+
+```{r}
+r <- raster(ncol= 10, nrow=10, xmx= -80, xmn=-150, ymn= 20, ymx=60)
+values(r)<- runif(ncell(r))
+plot(r)
+
+#como cualquier objeto espacial se le puede agregar 
+
+plot(pols, border= "blue", lwd= 2, add= TRUE)
+points(lonlat, col= "red", pch= 20, cex= 3)
+# para crear tres capas distrintas con stack para qure guarde
+
+r2<- r*r
+r3 <- sqrt(r)
+s <- stack(r,r2,r3) # tiene que tener el mismo capas
+s
+
+plot(s)
+```
+
+# lgdal
+
+Se puede descargar en la máquima, con arcgis tienen ese tipo de archivos, poligonos, ect.
+
+
+```{r}
+filename <- system.file("external/lux.shp", package= "raster")
+filename
+s <- shapefile(filename)
+str(s)
+
+plot(s)
+```
+
+El shp puede ser muy variable solo vienen pligonos lines o variables.
+
+```{r}
+#asignarles valores a los raster
+
+shapefile(s, "test:shp", overwrite= TRUE)
+ff <- list.files(patt= "^test")
+file.remove(ff)
+
+f <- system.file("external/rlogo.grd",package="raster")
+f
+
+r1 <- raster(f)
+r1
+
+plot(r1)
+
+r2 <- raster(f, band=2)
+b <- brick(f) # similar a stack 
+
+plot(b)
+
+s <- stack(f)
+plot(s)
+
+```
+
+
+Revistas de epideomiologías, en la u.
+
+* spatial statisc
+* Articulo a procesos puntuales el primer articulo
+
+ortografica y mercator
+
+```{r}
+library(raster)
+library(rgeos)
+library(rgdal)
+f <- system.file("external/lux.shp", package="raster")
+library(raster)
+p <- shapefile(f)
+p
+par(mai=c(0,0,0,0))
+plot(p)
+
+#si quiero ver los datos que estan en luxemburgo
+d<- data.frame(p)
+head(d)
+str(d)
+
+g <- geom(p)
+head(g)
+
+# se puede crear variables nuevas 
+
+p$NAME_2
+
+p[, "NAME_2"] # sigue siendo df
+
+set.seed(0)
+p$new <- sample(letters, length(p))
+
+# con NULL se quita
+
+dfr <- data.frame(District= p$NAME_1, Canton= p$NAME_2, Value= round(runif(length(p),100,1000)))
+dfr<- dfr[order(dfr$Canton),]
+
+pm <- merge(p, dfr, by.x=c("NAME_1", "NAME_2"), by.y= c("District","Canton"))
+
+#seleccionar 1
+
+i <- which(p$NAME_1=="Grevenmacher")
+g <- p[i,]
+g
+plot(g)
+
+
+z<- raster(p, nrow=2, ncol=2, vals= 1:4)
+names(z) <- "Zone"
+plot(z)
+
+
+z <- as(z, "SpatialPolygonsDataFrame")
+
+z # una capa te respeta los limites
+
+z2<- z[2,]
+
+plot(p)
+plot(z, add=TRUE, border= "blue", lwd=2)
+plot(z2, add= TRUE, border= "red", density= 3, col= "red")
+
+# junta con un objeto unido de los dos
+
+b <- bind(p,z)
+head(b)
+tail(b)
+
+plot(z2, add= TRUE, border= "red, density= 3, col= green")
+     
+     
+pa <- aggregate(p, by= "NAME_1")
+
+za <-aggregate(z)
+
+plot(za, col= "light gray", border= "light gray", lwd= 5)
+plot(pa, add=TRUE, col= rainbow(3), border= "white")
+
+e <- erase(p,z2)
+plot(e)
+
+plot(intersect(p,z2))
+
+
+e <- extent(6,6.4,49.7,50)
+pe<- crop(p,e)
+plot(p)
+plot(pe, col= "light blue", add= TRUE)
+
+#uniones
+
+u <- union(p,z)
+u <- p+z
+u
+
+set.seed(5)
+
+plot(u, col=sample(rainbow(length(u))))
+
+# mas importante
+cov <- cover(p,z)
+cov
+
+plot(cov)
+
+#diferencia simetrica
+
+dif  <- symdif(z,p)
+plot(dif, col= rainbow(length(dif)))
+
+class(dif)
+```
+
+
+
+```{r}
+filename <- system.file("external/test.grd", package = "raster")
+filename
+r <-raster(filename)
+
+hasValues(r)
+inMemory(r)
+
+plot(r, main= "RasterLayer") 
+
+r1 <- r2 <- r3 <- raster(nrow=10, ncol=10)
+
+values(r1) <- runif(ncell(r1))
+values(r2) <- runif(ncell(r2))
+values(r3) <- runif(ncell(r3))
+
+s <- stack(r1,r2,r3)
+s
+
+b1 <- brick(r1,r2,r3)
+b2 <- brick(s)
+
+b1;b2
+
+b1==b2
+```
+
+
+# sin quitar memoria
+
+Próxima clase ver como hacer los mapas para el trabajo 1
