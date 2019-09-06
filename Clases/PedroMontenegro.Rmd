@@ -106,3 +106,15 @@ grViz("digraph worflow{
 ```
 
 De inicio, es claro que nuestra forma de trabajo posee 6 etapas, pero no representa un proceso lineal, es decir, una vez que finaliza una etapa puede haber dependencia con la siguiente fase o se puede adelantar etapas en cierto punto del proyecto y existen diversos actores, un grupo de trabajo multidisciplinario.
+
+# Preguntas
+
+*Transparencia*: En mi equipo de trabajo lo utilizamos para que todos los colaboradores que programamos podamos revisar los projectos y los cambios que hemos realizado, además, es una herramienta que sirve para que nuestro jefe lo revise.
+
+*Capacidad de mantenerlo*: Sí, porque todo el código se utiliza en repositorios y se puede devolver a traves del tfs.
+
+*Modularidad*: Todos los componentes del trabajo están separado a través de la metodología CRISP. 
+
+*Portabilidad*: Tener en un servicio web en tfs nos permite levantar los proyectos de forma fácil.
+
+*Reproducibilidad y eficiencia*: Al mantener de manera virtual puedo reproducir todo el processo muy fácil desde bases de datos hasta replicar el código, el único problema es el control de versiones de los paquetes.
