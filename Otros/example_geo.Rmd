@@ -47,7 +47,7 @@ puntos <- movimientos %>% filter(pais %in% c("188", "CRC", "CR", "CRI"),
 
 Paramétros para buscar en el API google maps. Nombre del comercio y Pais, se construye una matriz con la misma longitud para extraer la longitud y latitud.
 
-```{r echo=FALSE}
+```{r, eval=FALSE}
 val_buscar <- paste0(puntos$comercio, ", Costa Rica")
 valores <- matrix(nrow = NROW(val_buscar), ncol = 2)
 colnames(valores) <- c("longitud", "latitud")
@@ -55,7 +55,7 @@ colnames(valores) <- c("longitud", "latitud")
 
 Función para extraer valores
 
-```{r echo=FALSE}
+```{r, eval=FALSE}
 for (i in seq_along(val_buscar)) {
   query <- geocode(val_buscar[i], output = "all")  
     if (query$status == "OK") {
