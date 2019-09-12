@@ -31,7 +31,6 @@ glimpse(movimientos)
 ```{r}
 library(ggmap)
 data14=read.csv("https://raw.githubusercontent.com/fivethirtyeight/uber-tlc-foil-response/master/uber-trip-data/uber-raw-data-apr14.csv")
-register_google(key = "AIzaSyBvjAo5uAR4eeHWqJXLvwfWcihCt2micrc")
 NYCMap <- get_map('New York',maptype = 'roadmap', zoom=10)
 ggmap(NYCMap) + geom_point(aes(x=Lon[], y =Lat[]), data=data14)
 ```
