@@ -18,8 +18,8 @@ Ejemplo SpatialPolygons
 library(raster)
 library(rgeos)
 library(rgdal)
-f <- system.file("external/lux.shp", package="raster")
 library(raster)
+f <- system.file("external/lux.shp", package="raster")
 p <- shapefile(f)
 p
 par(mai=c(0,0,0,0))

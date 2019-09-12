@@ -1,0 +1,152 @@
+---
+title: "GGMAP"
+author: "Pedro Montenegro"
+date: "9/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(ggmap)
+library(tidyverse)
+library(stringr)
+library(RColorBrewer)
+```
+
+
+```{r}
+load("../Otros/movimientos.Rdata")
+```
+
+Se presentan datos transaccionales de compras en tarjeta de crédito.
+
+```{r}
+glimpse(movimientos)
+```
+
+```{r}
+library(ggmap)
+data14=read.csv("https://raw.githubusercontent.com/fivethirtyeight/uber-tlc-foil-response/master/uber-trip-data/uber-raw-data-apr14.csv")
+register_google(key = "AIzaSyBvjAo5uAR4eeHWqJXLvwfWcihCt2micrc")
+NYCMap <- get_map('New York',maptype = 'roadmap', zoom=10)
+ggmap(NYCMap) + geom_point(aes(x=Lon[], y =Lat[]), data=data14)
+```
+
+
+Primero, nos va a interesar solo las transacciones clasificadas como compras y efectúadas en Costa Rica. Además, al comercio se le va a sumar el monto total de compras efectuadas por los movimientos.
+
+```{r}
+puntos <- movimientos %>% filter(pais %in% c("188", "CRC", "CR", "CRI"),
+  tipo != "Adelantos") %>%
+  group_by(comercio) %>% summarise(monto = sum(monto_col)) %>%
+  arrange(desc(monto)) #%>% filter(!(comercio %in% ubicaciones$comercio))
+```
+
+Paramétros para buscar en el API google maps. Nombre del comercio y Pais, se construye una matriz con la misma longitud para extraer la longitud y latitud.
+
+```{r}
+val_buscar <- paste0(puntos$comercio, ", Costa Rica")
+valores <- matrix(nrow = NROW(val_buscar), ncol = 2)
+colnames(valores) <- c("longitud", "latitud")
+```
+
+
+```{r}
+    https://maps.googleapis.com/maps/api/geocode/json
+      ?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA
+      &client=YOUR_CLIENT_ID
+      &signature=SIGNATURE
+
+query <- geocode(val_buscar[4], output = "all")  
+    if (query$status == "OK") {
+      valores[i, 1] <- as.numeric(query$results[[1]]$geometry$location$lng)
+      valores[i, 2] <- as.numeric(query$results[[1]]$geometry$location$lat)
+      print(valores[i, ])}
+```
+
+Función para extraer valores
+
+```{r}
+for (i in seq_along(val_buscar)) {
+  query <- geocode(val_buscar[i], output = "all")  
+    if (query$status == "OK") {
+      valores[i, 1] <- as.numeric(query$results[[1]]$geometry$location$lng)
+      valores[i, 2] <- as.numeric(query$results[[1]]$geometry$location$lat)
+      print(valores[i, ])
+    }
+    else if (query$status == "OVER_QUERY_LIMIT") {
+      valores <- valores[1:(i - 1), ]
+      break
+    }
+}
+```
+
+
+
+temp2 <- cbind(puntos$comercio[1:(i-1)], valores)
+
+colnames(temp2) <- c("comercio", "lon", "lat")
+ubicaciones <- rbind(ubicaciones, temp2)
+
+ubicaciones <- ubicaciones %>% mutate(lon = as.numeric(lon),
+                                      lat = as.numeric(lat))
+
+map <- read_rds("RData/CRI_adm1.rds") %>% fortify() %>%
+  filter(long < -82, long > -86, lat < 11.15, lat > 8)
+
+ubicaciones %>% filter(lon < -82, lon > -86, lat < 11.15, lat > 8) %>%
+  ggplot(aes(x = lon, y = lat))  +
+  geom_polygon(data = map, aes(x = long, y = lat, group = group),
+  fill = "#0063a3", col = "white", alpha = 0.8) +
+  geom_point(col = "#fab31e", size = 1.2) + coord_map() +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(),
+        panel.background = element_blank(), legend.position = "none",
+        axis.title = element_blank(), panel.grid = element_blank()) +
+  ggtitle("Ubicación aproximada de comercios donde compran los clientes",
+          "Tarjeta de crédito")
+
+mov <- movimientos %>% select(mcc_cat, comercio) %>% group_by(comercio) %>%
+  slice(1)
+
+
+
+top10 <- c("SUPERMERCADOS Y ABARROTES",
+           "ESTACIONES DE GASOLINA",
+           "TIENDA DE DEPARTAMENTOS",
+           "RESTAURANTES",
+           "SERVICIOS PUBLICOS",
+           "FARMACIAS",
+           "AEROLINEAS",
+           "HOTELES Y CABINAS",
+           "UNIVERSIDADES",
+           "FERRETERIAS"
+)
+
+top5 <- c("SUPERMERCADOS Y ABARROTES",
+           "ESTACIONES DE GASOLINA",
+           "TIENDA DE DEPARTAMENTOS",
+           "RESTAURANTES",
+           "SERVICIOS PUBLICOS"
+)
+
+
+ubicaciones2 <- ubicaciones %>% left_join(mov, by = "comercio") %>%
+  mutate(cat = ifelse(mcc_cat %in% top5, mcc_cat, "OTROS"),
+         cat = str_to_title(cat))
+
+
+ubicaciones2 %>% filter(lon < -82, lon > -86, lat < 11.15, lat > 8) %>%
+  ggplot(aes(x = lon, y = lat))  +
+  geom_polygon(data = map, aes(x = long, y = lat, group = group),
+               fill = "white", col = "black", alpha = 0.8) +
+  geom_point(aes(col = as.factor(cat), shape = as.factor(cat)), size = 1.5) + coord_map() +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(),
+        panel.background = element_blank(), legend.position = "right",
+        axis.title = element_blank(), panel.grid = element_blank()) +
+  ggtitle("Ubicación aproximada de comercios donde compran los clientes",
+          "Tarjeta de crédito") + scale_color_manual(name = "",
+        values =  RColorBrewer::brewer.pal(7, "Set1"))
