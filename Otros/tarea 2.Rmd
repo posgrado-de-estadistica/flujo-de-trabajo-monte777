@@ -1,0 +1,79 @@
+---
+title: "Tarea 1"
+author: "Pedro Montenegro"
+date: "13/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(sf)
+library(sp)
+library(spData)
+library(tidyverse)
+library(tmap)
+library(mapview)
+```
+
+```{r include=FALSE}
+africa = world %>% 
+  filter(continent == "Africa", !is.na(iso_a2)) %>% 
+  left_join(worldbank_df, by = "iso_a2") %>% 
+  select(name, subregion, gdpPercap, HDI, pop_growth) %>% 
+  st_transform("+proj=aea +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25")
+```
+
+```{r}
+plot(africa$HDI)
+```
+
+```{r}
+tm_africa <- tm_shape(africa) +
+tm_polygons("HDI", 
+          palette = "RdYlBu")
+```
+
+```{r}
+m = mapview::mapview(africa)
+m@map
+```
+
+Create a map showing the geographic distribution of the Human Development Index (HDI) across Africa with:
+
+base graphics (hint: use plot()) and
+tmap (hint: use tm_shape(africa) + ...).
+Name two advantages of each approach
+Bonus: name 2 other packages could be used to show the same data?
+
+# Siga esta presentación y haga el ejercicio de la pag 16
+# https://geocompr.github.io/presentations/04_viz.html#1
+# Las preguntas que debe responder son las siguientes:
+ 
+# Cree un mapa que muestre la distribución geográfica de el Human Development Index (HDI) en el continente africano, esto usando:
+
+# (1) base graphics (hint: use plot()) 
+# (2) tmap (hint: use tm_shape(africa) + ...).
+# 
+# Edite los gráficos con un título, una descripción, fuente y todos los detalles que considere necesarios.
+# Ahora, escriba dos ventajas de cada opción.
+
+## Código sugerido: 
+  
+library(sf)
+library(spData)
+library(tidyverse)
+install.packages('spDataLarge',repos='https://nowosad.github.io/drat/',type='source')
+
+africa = world %>% 
+  filter(continent == "Africa", !is.na(iso_a2)) %>%
+  left_join(worldbank_df, by = "iso_a2") %>% 
+  select(name, subregion, gdpPercap, HDI, pop_growth) %>% 
+  st_transform("+proj=aea +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25")
+
+plot(africa[,"HDI"])
+
+library(tmap)
+tm_shape(africa) + tm_polygons("HDI", palette = "RdYlBu")
