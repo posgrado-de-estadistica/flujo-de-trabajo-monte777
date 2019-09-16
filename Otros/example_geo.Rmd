@@ -35,6 +35,15 @@ map <- read_rds("../Otros/CRI_adm1.rds") %>% fortify() %>%
 #map <- getData(country = "CRI", level = 2)# obtener datos prov, canton
 ```
 
+# Pregunta de investigación
+
+Determinar uso de las tarjetas de crédito de los clientes $(Empresa)$ de forma geoespacial para conocer puntos de concentración y principales comercios.
+
+MCC Transacciones de crédito
+
+Los mcc de transferencias son reportes que emiten emisores de tarjetas como Mastercard, Visa, no incluye American Express.
+
+
 # Explicación
 
 Se presentan datos transaccionales de compras en tarjeta de crédito, además, el comercio asociado, por medio del API google vamos a aproximar la longitud y latitud de los comercios que se registran en los datos sobre las compras de tárjeta de crédito.
@@ -42,6 +51,8 @@ Se presentan datos transaccionales de compras en tarjeta de crédito, además, e
 Para utilizar el API google vamos a registrarnos en el [link](https://cloud.google.com/maps-platform/), posteriormente, se registra en r con register_google(key = "Credenciales propias"), la página tiene 365 días sin costo y con $300 para uso.
 
 # Resumen de las variables.
+
+Periodo Agosto 2016 a enero 2017.
 
 ```{r}
 glimpse(movimientos)
@@ -130,4 +141,12 @@ ubicaciones2 %>%
           "Tarjeta de crédito") + scale_color_manual(name = "",
         values =  RColorBrewer::brewer.pal(7, "Set1"))
 ```
+
+# Conclusiones
+
+- Puntos no son precisos.
+- Omisión de registros por malas descripciones.
+- La información es muy útil comercial y patrón de consumo.
+- Colocación de tarjetas y nuevos productos. Recomendación de productos.
+
 

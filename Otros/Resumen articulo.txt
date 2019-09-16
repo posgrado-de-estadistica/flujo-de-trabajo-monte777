@@ -1,0 +1,66 @@
+El análisis se realiza en India. 1,364 millones de personas aproximadamente.
+
+
+Los accidentes en carreteras son puntos calientes evaluados y delineados en la ciudad del sur de la india, donde el inadecuado desarrollo
+de las conexiones de transporte frecuentemente se propicia la congestión de trafico y accidentes.
+
+Los patrones de localización y distribución de puntos calientes son examinados con la ayuda de información geografica para llevar
+brindar la influencia espacial y factores temporales en su formaciones.
+
+La evaluaciones de cluster espaciales de accidentes y puntos calientes de densidades espaciales llevan a cabo 
+siguiendo Mora los metodos espaciales de autocorrelación, los estadisticos Gi y los puntos de distribucción de densidad de 
+kernel. Los accidentes tambien muestran una natural agrupación mientras la comparación de espacio temporal se rompe la delimitación+
+de analisis los caminos extensos como zonas aisladas donde los puntos son contrados. los resultadis de 
+puntos calientes pueden ser efectavamente usados por varias agencias para adoptar la mejor administración y planeamiento de estr
+tegias para mejorar las condiciones tanto para la reducción de accidentes.
+
+Justificaciones:
+
+1) Crecimiento de la infraestructura de transporte 
+2) Crecimiento industrial e inmobilario
+
+Aproximadamente, 85000 personas mueren y 300000 heridas.
+Causas errores humanos descuido de conductores y peatones.
+
+Una hipotesis.
+
+Mediante el análisis sistemático para:
+- Construcción de infraestructura vial para el efectivo transito y control policial.
+- Dispositivos de control de transito.
+
+La incorporación de tecnicas GIS son utilizadas por empresas para identificar punto criticos. Predicción de zonas con mayor proba de 
+ocurrencia de accidentes.
+
+Área de estudio
+
+La corporación urbana de Thiruvananthapuram, sede del estado de kerala, India, con una extensión de 141.74 km2,
+limitado por el este del oceano arabico y el oeste por el Ghasts occidental.
+
+La región, por lo general, cuenta con una topología irregular con relieve bajo así como lagos y estuarios.
+
+Aunque la ciudad es categorizada por un rapido crecimiento, no es una planificada y la mayoría de caminos son extrechos,
+causando un fuerte congestionamiento de transito. Adicionalmente debe ser el centro administrativo del estado, la ciudada ha
+tenido un desarrollo en los ultimos años como un centro de información tecnologica con el inicio de un número de IT industrias.
+
+Predicción del patrón espacial delos accidentes de tráfico mediante el uso de datos de campo reales y el Sistema de 
+Información Geográfica (SIG) es relativamente recientey los resultados se correlacionan bien con las condiciones reales.
+
+Data set
+
+Datos cantidad total de accidentes es 1468, para los cuales se consideran las siguientes divisiones:
+
+Análisis I de morán
+
+
+|División| Cantidad de accidentes| 
+|Monzón|702| 
+|No Monzón|766|
+|Institución Educativa|820|
+|Lugares Regiliosos|333|
+
+Tiempos monzónicos son producto de inversión del viento del océano índico, este no puede pasar por el himalaya y produce 
+aumento de las lluvias. En la india se divide en 2 región montañosa del Ghats occidentales.
+
+
+
+ 
