@@ -1,13 +1,21 @@
 ---
 title: "Tarea 2"
-author: "Pedro Montenegro"
-date: "13/9/2019"
-output: html_document
+output: 
+  flexdashboard::flex_dashboard:
+    self_contained: false
+    vertical_layout: scroll
+    theme: united
+    highlight: kate
+    colortheme: "dolphin"
+    orientation: row
+    df_print: paged
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+Row {data-high=15}
+-----------------------------------------------------------------------
+### **Visualización GIS África**
+**Introducción:** El conjunto de datos World, considerando la información de África para visualizar la información del índice de desarrollo humano.
+
 
 ```{r message=FALSE, warning=FALSE}
 library(sf)
@@ -27,16 +35,13 @@ library(raster)
 library(leaflet)
 ```
 
-# Información World selección África
+**Información World selección África**
 
 ```{r include=FALSE}
-world %>% st_drop_geometry() %>% 
-  group_by(continent) %>% count()
-
 africa <- world %>% 
   filter(continent == "Africa", !is.na(iso_a2)) %>% 
   left_join(worldbank_df, by = "iso_a2") %>% 
-  select(name, subregion, gdpPercap, HDI, pop_growth) %>% 
+  dplyr::select(name, subregion, gdpPercap, HDI, pop_growth) %>% 
   st_transform("+proj=aea +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25")
 
 africa_sp <- as(africa$geom, 'Spatial')
@@ -44,9 +49,21 @@ africa_sp <- as(africa$geom, 'Spatial')
 
 ```
 
-# Gráfico  sf
-
 ```{r}
+world %>% st_drop_geometry() %>% 
+  group_by(continent) %>% summarise(puntos= n()) %>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Visualización de datos World" = 2))
+```
+
+
+Row2 {data-width=200}
+-----------------------------------------------------------------------
+
+### **Gráfico  sf**
+
+```{r  out.width='50%', fig.align='center'}
 africa %>% 
   ggplot() +
   geom_sf(aes(geometry= geom, fill= HDI)) +  
@@ -56,7 +73,10 @@ africa %>%
          subtitle= "Africa")
 ```
 
-# Gráfico con tmap interactivo
+Row3 {data-width=200}
+-----------------------------------------------------------------------
+
+### **Gráficos con tmap interactivo HDI, Africa 1**
 
 ```{r message=FALSE, warning=FALSE}
 tmap_mode("view") 
@@ -68,6 +88,8 @@ tm_polygons("HDI") +
 tmap_mode("plot")
 ```
 
+### **Gráficos con tmap interactivo HDI, Africa 2**
+
 ```{r}
 tmap_mode("view")
 tm_basemap("Stamen.Watercolor") +
@@ -75,16 +97,21 @@ tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE) + tm_bubbles(size 
 tm_tiles("Stamen.TonerLabels")
 ```
 
-# Mapview interactivo
+Row4 {data-width=200}
+-----------------------------------------------------------------------
+### **Mapview interactivo HDI, Africa 1**
 
 ```{r}
 m = mapview::mapview(africa)
 m@map
 ```
 
-# Gráfico tmap regular
+Row5 {data-width=400}
+-----------------------------------------------------------------------
 
-```{r}
+### **Gráficos tmap regular, 1**
+
+```{r message=FALSE, warning=FALSE}
 tmap_mode("plot")
 
 tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE)+
@@ -95,15 +122,25 @@ tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE)+
   tm_layout(title = "Distribución Índice de Desarrollo Humano \n África")
 ```
 
-```{r}
+### **Gráficos tmap regular, 2**
+
+```{r message=FALSE, warning=FALSE}
+tmap_mode("plot")
+
 tm_shape(africa) +
 tm_polygons("HDI", 
           palette = "RdYlBu")+
-  tm_scale_bar(position=c("right", "top")) +
-  tm_compass(size = 2, position=c("right", "top"))
+  tm_scale_bar(position=c("right", "bottom")) +
+  tm_compass(size = 2, position=c("right", "bottom"))+
+  tm_layout(inner.margins = 0.18)+
+  tm_layout(title = "Distribución Índice de Desarrollo Humano \n África")
 ```
 
-# Gráfico con Cartography
+
+Row6 {data-width=200}
+-----------------------------------------------------------------------
+
+### **Gráfico con Cartography*
 
 ```{r}
 plot(st_geometry(africa), col="darkseagreen3", border="darkseagreen4",  
