@@ -1,5 +1,5 @@
 ---
-title: "Tarea 2"
+title: "Tarea 2, Pedro Montenegro Masís"
 output: 
   flexdashboard::flex_dashboard:
     self_contained: false
@@ -140,7 +140,7 @@ tm_polygons("HDI",
 Row6 {data-width=200}
 -----------------------------------------------------------------------
 
-### **Gráfico con Cartography*
+### **Gráfico con Cartography**
 
 ```{r}
 plot(st_geometry(africa), col="darkseagreen3", border="darkseagreen4",  
