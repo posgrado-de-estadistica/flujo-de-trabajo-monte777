@@ -16,6 +16,12 @@ library(spData)
 library(tidyverse)
 library(tmap)
 library(mapview)
+library(ggplot2)
+library(ggspatial)
+library(ggmap)
+library(classInt)
+library(spacetime)
+library(spplot)
 ```
 
 ```{r include=FALSE}
@@ -27,8 +33,87 @@ africa = world %>%
 ```
 
 ```{r}
-plot(africa$HDI)
+africa %>% 
+  ggplot() +
+  geom_sf(aes(geometry= geom, fill= HDI)) +  
+  scale_fill_viridis_c(guide = guide_legend(title = "HDI")) +
+  theme_minimal() + 
+  ggtitle("Distribución del Índice de Desarrollo Humano",
+         subtitle= "Africa")
 ```
+```{r}
+tmap_mode("view") 
+
+tm_shape(africa)+
+tm_polygons("HDI")
+
+tmap_mode("plot")
+
+```
+
+
+
+```{r}
+ph_basemap <- get_map(location=c(lon = -75.16522, lat = 39.95258), zoom=11, maptype = 'terrain-background', source = 'stamen')
+
+```
+
+```{r}
+data(air, package = "spacetime")
+head(air)
+class(air)
+
+nds = DE_NUTS1["Niedersachsen",]
+class(nds)
+class(africa)
+
+africa_sp <- as(africa$geom, 'Spatial')
+
+class(africa_sp)
+
+bgMap = get_map(bbox(africa_sp), source = "google", zoom = 7)
+
+
+
+ggmap_africa <- get_map("africa", maptype = "satellite", zoom = 6, source = "google")
+
+par(mar = rep(0,4))
+merc = CRS("+init=epsg:3857")
+plot(spTransform(nds, merc), bgMap = bgMap, col = grey(.5, alpha = .5))
+```
+
+```{r}
+library(mapview)
+
+```
+
+```{r}
+tmap_mode("plot")
+
+tm1 <- tm_shape(london_boroughs_27700) + tm_polygons("count", convert2density = TRUE)
+tm2 <- tm_shape(london_boroughs_27700) + tm_bubbles(size = "count")
+
+tmap_arrange(tm1, tm2)
+```
+
+```{r}
+tmap_mode("view")
+tm_basemap("Stamen.Watercolor") +
+tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE) + tm_bubbles(size = "HDI", col = "red") +
+tm_tiles("Stamen.TonerLabels")
+```
+
+```{r}
+tmap_mode("plot")
+
+tm_shape(london_boroughs_27700) + 
+  tm_polygons("count", convert2density = TRUE) +
+  tm_bubbles(size = "count", col = "red") +
+  tm_scale_bar(position=c("left", "bottom")) +
+  tm_compass(size = 2, position=c("right", "top"))
+```
+
+
 
 ```{r}
 tm_africa <- tm_shape(africa) +
