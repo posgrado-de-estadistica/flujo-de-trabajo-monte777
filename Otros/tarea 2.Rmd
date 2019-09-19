@@ -62,7 +62,8 @@ africa %>%
 tmap_mode("view") 
 
 tm_shape(africa)+
-tm_polygons("HDI")
+tm_polygons("HDI") +
+    tm_fill(col = "África", title = "Distribución del índice de desarrollo humano")
 
 tmap_mode("plot")
 ```
@@ -87,9 +88,11 @@ m@map
 tmap_mode("plot")
 
 tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE)+
-  tm_bubbles(size = "HDI") +
-  tm_scale_bar(position=c("right", "top")) +
-  tm_compass(size = 2, position=c("right", "top"))
+  tm_bubbles(size = "HDI", col= "HDI") +
+  tm_scale_bar(position=c("right", "bottom")) +
+  tm_compass(type = "8star",size = 2, position = c("right", "bottom")) +
+  tm_layout(legend.stack = FALSE,inner.margins = 0.19)+
+  tm_layout(title = "Distribución Índice de Desarrollo Humano \n África")
 ```
 
 ```{r}
@@ -155,3 +158,10 @@ Get_Map_africa <-
 plot(Get_Map_africa)
 class(Get_Map_africa)
 ```
+
+```{r}
+leaflet(data = africa) %>% 
+  addPolygons(data = africa, fill = FALSE) %>% 
+  addMiniMap()
+```
+
