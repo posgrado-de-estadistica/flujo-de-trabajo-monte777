@@ -61,6 +61,11 @@ Análisis I de morán
 Tiempos monzónicos son producto de inversión del viento del océano índico, este no puede pasar por el himalaya y produce 
 aumento de las lluvias. En la india se divide en 2 región montañosa del Ghats occidentales.
 
+Preguntas de investigación:
+
+1) Autocorrelacción espacial puntos siguen un distrinucción aleatoria
+2) 
+
 
 
  

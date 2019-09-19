@@ -1,5 +1,5 @@
 ---
-title: "Tarea 1"
+title: "Tarea 2"
 author: "Pedro Montenegro"
 date: "13/9/2019"
 output: html_document
@@ -21,16 +21,30 @@ library(ggspatial)
 library(ggmap)
 library(classInt)
 library(spacetime)
-library(spplot)
+library(cartography)
+library(raster)
+#library(spDataLarge)
+library(leaflet)
 ```
 
+# Información World selección África
+
 ```{r include=FALSE}
-africa = world %>% 
+world %>% st_drop_geometry() %>% 
+  group_by(continent) %>% count()
+
+africa <- world %>% 
   filter(continent == "Africa", !is.na(iso_a2)) %>% 
   left_join(worldbank_df, by = "iso_a2") %>% 
   select(name, subregion, gdpPercap, HDI, pop_growth) %>% 
   st_transform("+proj=aea +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25")
+
+africa_sp <- as(africa$geom, 'Spatial')
+#class(africa_sp)
+
 ```
+
+# Gráfico  sf
 
 ```{r}
 africa %>% 
@@ -41,59 +55,16 @@ africa %>%
   ggtitle("Distribución del Índice de Desarrollo Humano",
          subtitle= "Africa")
 ```
-```{r}
+
+# Gráfico con tmap interactivo
+
+```{r message=FALSE, warning=FALSE}
 tmap_mode("view") 
 
 tm_shape(africa)+
 tm_polygons("HDI")
 
 tmap_mode("plot")
-
-```
-
-
-
-```{r}
-ph_basemap <- get_map(location=c(lon = -75.16522, lat = 39.95258), zoom=11, maptype = 'terrain-background', source = 'stamen')
-
-```
-
-```{r}
-data(air, package = "spacetime")
-head(air)
-class(air)
-
-nds = DE_NUTS1["Niedersachsen",]
-class(nds)
-class(africa)
-
-africa_sp <- as(africa$geom, 'Spatial')
-
-class(africa_sp)
-
-bgMap = get_map(bbox(africa_sp), source = "google", zoom = 7)
-
-
-
-ggmap_africa <- get_map("africa", maptype = "satellite", zoom = 6, source = "google")
-
-par(mar = rep(0,4))
-merc = CRS("+init=epsg:3857")
-plot(spTransform(nds, merc), bgMap = bgMap, col = grey(.5, alpha = .5))
-```
-
-```{r}
-library(mapview)
-
-```
-
-```{r}
-tmap_mode("plot")
-
-tm1 <- tm_shape(london_boroughs_27700) + tm_polygons("count", convert2density = TRUE)
-tm2 <- tm_shape(london_boroughs_27700) + tm_bubbles(size = "count")
-
-tmap_arrange(tm1, tm2)
 ```
 
 ```{r}
@@ -103,62 +74,84 @@ tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE) + tm_bubbles(size 
 tm_tiles("Stamen.TonerLabels")
 ```
 
-```{r}
-tmap_mode("plot")
-
-tm_shape(london_boroughs_27700) + 
-  tm_polygons("count", convert2density = TRUE) +
-  tm_bubbles(size = "count", col = "red") +
-  tm_scale_bar(position=c("left", "bottom")) +
-  tm_compass(size = 2, position=c("right", "top"))
-```
-
-
-
-```{r}
-tm_africa <- tm_shape(africa) +
-tm_polygons("HDI", 
-          palette = "RdYlBu")
-```
+# Mapview interactivo
 
 ```{r}
 m = mapview::mapview(africa)
 m@map
 ```
 
-Create a map showing the geographic distribution of the Human Development Index (HDI) across Africa with:
+# Gráfico tmap regular
 
-base graphics (hint: use plot()) and
-tmap (hint: use tm_shape(africa) + ...).
-Name two advantages of each approach
-Bonus: name 2 other packages could be used to show the same data?
+```{r}
+tmap_mode("plot")
 
-# Siga esta presentación y haga el ejercicio de la pag 16
-# https://geocompr.github.io/presentations/04_viz.html#1
-# Las preguntas que debe responder son las siguientes:
- 
-# Cree un mapa que muestre la distribución geográfica de el Human Development Index (HDI) en el continente africano, esto usando:
+tm_shape(africa) + tm_polygons("HDI", convert2density = TRUE)+
+  tm_bubbles(size = "HDI") +
+  tm_scale_bar(position=c("right", "top")) +
+  tm_compass(size = 2, position=c("right", "top"))
+```
 
-# (1) base graphics (hint: use plot()) 
-# (2) tmap (hint: use tm_shape(africa) + ...).
-# 
-# Edite los gráficos con un título, una descripción, fuente y todos los detalles que considere necesarios.
-# Ahora, escriba dos ventajas de cada opción.
+```{r}
+tm_shape(africa) +
+tm_polygons("HDI", 
+          palette = "RdYlBu")+
+  tm_scale_bar(position=c("right", "top")) +
+  tm_compass(size = 2, position=c("right", "top"))
+```
 
-## Código sugerido: 
-  
-library(sf)
-library(spData)
-library(tidyverse)
-install.packages('spDataLarge',repos='https://nowosad.github.io/drat/',type='source')
+# Gráfico con Cartography
 
-africa = world %>% 
-  filter(continent == "Africa", !is.na(iso_a2)) %>%
-  left_join(worldbank_df, by = "iso_a2") %>% 
-  select(name, subregion, gdpPercap, HDI, pop_growth) %>% 
-  st_transform("+proj=aea +lat_1=20 +lat_2=-23 +lat_0=0 +lon_0=25")
+```{r}
+plot(st_geometry(africa), col="darkseagreen3", border="darkseagreen4",  
+     bg = "lightblue1", lwd = 0.5)
 
-plot(africa[,"HDI"])
+propSymbolsChoroLayer(
+  x = africa, 
+  var = "HDI", 
+  inches = 0.1,
+  border = "grey50",
+  lwd = 1,
+  legend.var.pos = "África", 
+  legend.var.title.txt = "Índice Desarrollo Humano",
+  var2 = "HDI",
+  method = "equal", 
+  nclass = 6, 
+  col = carto.pal(pal1 = "sand.pal", n1 = 6),
+  #legend.var2.values.rnd = -2,
+  legend.var2.pos = "left", 
+  legend.var2.title.txt = "HDI"
+) 
 
-library(tmap)
-tm_shape(africa) + tm_polygons("HDI", palette = "RdYlBu")
+# layout
+layoutLayer(title="Índice de Desarrollo Humano África", 
+            scale = 5, tabtitle = TRUE, frame = FALSE)
+# north arrow
+north(pos = "topleft")
+```
+
+# Gráfico con ggmap google
+
+```{r}
+Country <- "africa"
+gc <- geocode('africa')
+center <- as.numeric(gc) 
+
+ africamap = ggmap(get_googlemap(center= center, zoom=3),extent="normal")
+# plot(africamap)
+
+Get_Map_africa <-
+  get_map(
+      location = center
+    , zoom = 3
+    , maptype = "roadmap"
+    , messaging = FALSE
+    , urlonly = FALSE
+    , filename = "ggmapTemp"
+    , crop = TRUE
+    , color = "color"
+    , source = "google"
+    )
+plot(Get_Map_africa)
+class(Get_Map_africa)
+```
