@@ -1,0 +1,38 @@
+Procesos puntuales.
+
+Ubicación de las personas o unidad y queremos estimar los eventos.
+
+Dependiendo la pregunta de investigación. Cuales son los lugares donde no hubo accidentes, o donde no compro o donde pasó.
+
+Hacer el muestreo.
+
+Hacer una distribución de los que me interesa y luego analizarlos.
+Ver la distribucción de compras.
+
+Escoger la ventana, es muy dificil saber si es representativo o no. El bbox.
+
+Estimar la variación. Varialibidad en los casos de infectacción.
+
+
+Lo que deseo saber como variable respuesta la siguiente lat y lon predecir en el siguiente puntos.
+
+Supuestos
+## Regiones
+## Border 2 bordes
+## Mi área de estudio es representativa (normalidad)
+
+
+Supuesto isotropico la distancia no afecta la dirección, sino definir en cual punto cambia. Técnica dos modelos diferentes para cada dirección
+
+
+escala es el ancho de banda.
+
+Kernel es una función de densidad.
+kernel en procesamiento de señales suavizar los procesos.
+
+
+
+Por debajo hay agrupaciones, por encima hay agrupaciones.
+
+
+

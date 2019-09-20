@@ -1,0 +1,26 @@
+---
+title: "Untitled"
+author: "Pedro Montenegro"
+date: "16/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{ll}
+\hline
+\textbf{Recurso} & \textbf{Comentarios} \\
+\hline
+Científicos &  2 analistas a 3/4 y 1/4 de tiempo  \\
+Equipo & 2 computadoras portátiles y 2 virtual machine   \\
+Software & R con R Studio para análisis y git para colaboración \\
+Presupuesto & Sin recursos adicionales \\
+\hline
+\end{tabular}
+\end{table}
