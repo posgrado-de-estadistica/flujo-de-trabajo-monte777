@@ -1,0 +1,295 @@
+---
+title: "tarea_3"
+author: "Pedro Montenegro"
+date: "21/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(georob)
+library(lattice)
+library(dplyr)
+```
+
+
+The package sp provides this data set. According to the help page, it “gives locations and
+topsoil heavy metal concentrations, along with a number of soil and landscape variable at
+the observation locations, collected in a flood plain of the river Meuse, near the village of
+Stein (NL)”.
+
+```{r}
+data(meuse, package="sp")
+levels(meuse$ffreq) <- paste("ffreq", levels(meuse$ffreq), sep="")
+levels(meuse$soil) <- paste("soil", levels(meuse$soil), sep="")
+str(meuse)
+```
+
+
+Bivand et al. (2013) use the data to illustrate geostatistical analyses by the package gstat
+(Pebesma, 2004). We analyse here the data on zinc in the topsoil (Figure 1).
+
+Figure 1 : Meuse data set: zinc concentration at 155 locations in floodplain of river Meuse near
+Stein (NL) shown in Google Earth™.
+Figure 1 suggests that zinc concentration depends on distance to the river. We check
+graphically whether the two factors ffreq (frequency of flooding) and soil (type) also
+influence zinc:
+
+
+```{r}
+palette(trellis.par.get("superpose.symbol")$col)
+plot(zinc~dist, meuse, pch=as.integer(ffreq), col=soil)
+legend("topright", col=c(rep(1, nlevels(meuse$ffreq)), 1:nlevels(meuse$soil)), pch=c(1:nlevels(meuse$ffreq), rep(1, nlevels(meuse$soil))), bty="n", legend=c(levels(meuse$ffreq), levels(meuse$soil)))
+```
+
+
+Figure 2 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq)
+and soil type.
+zinc depends non-linearly on dist and seems in addition to depend on ffreq (larger
+concentration at more often flooded sites). Furthermore, the scatter of zinc for given distance increases with decreasing distance (= increasing zinc concentration, heteroscedastic
+variation). We use log(zinc) to stabilize the variance:
+
+
+```{r}
+ xyplot(log(zinc)~dist | ffreq, meuse, groups=soil, panel=function(x, y, ...){panel.xyplot(x, y, ...) panel.loess(x, y, ...)}, auto.key=TRUE)
+
+```
+
+Figure 3 : Dependence of zinc on distance to river, frequency of flooding (ffreq) and soil
+type.
+The relation log(zinc)~dist is still non-linear, hence we transform dist by √ :
+
+```{r}
+xyplot(log(zinc)~sqrt(dist) | ffreq, meuse, groups=soil, panel=function(x, y, ...){panel.xyplot(x, y, ...) panel.loess(x, y, ...) panel.lmline(x, y, lty="dashed", ...)}, auto.key=TRUE)
+```
+
+Figure 4 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq)
+and soil type.
+which approximately linearizes the relation.
+The slopes of the regression lines log(zinc)~sqrt(dist) are about the same for all levels
+of ffreq. But the intercept of ffreq1 differs from the intercepts of the other levels. Hence,
+as an initial drift model we use
+
+```{r}
+r.lm <- lm(log(zinc)~sqrt(dist)+ffreq, meuse)
+summary(r.lm)
+
+```
+
+The residual diagnostic plots
+
+```{r}
+op <- par(mfrow=c(2, 2)); plot(r.lm); par(op)
+```
+
+
+Figure 5 : Residual diagnostic plots for linear drift model log(zinc)~sqrt(dist)+ffreq.
+do not show violations of modelling assumptions.
+Next, we compute the sample variogram of the residuals for the 4 directions N-S, NE-SW,
+E-W, SE-NW by the methods-of-moments estimator:
+
+```{r}
+plot(sample.variogram(residuals(r.lm), locations=meuse[, c("x","y")],
+lag.dist.def=100, max.lag=2000, xy.angle.def=c(0, 22.5, 67.5, 112.5, 157.5, 180),
+estimator="matheron"), type="l",
+main="sample variogram of residuals log(zinc)~sqrt(dist)+ffreq")
+```
+
+
+Figure 6 : Direction-dependent sample variogram of regression residuals of
+log(zinc)~sqrt(dist)+ffreq.
+The residuals appear to be spatially dependent. For the short lags there is no clear
+dependence on direction, hence, we assume that auto-correlation is isotropic.
+To complete the exploratory modelling exercise, we compute the direction-indepdendent
+sample variogram and fit a spherical variogram model by weighted non-linear least squares
+(using Cressie’s weights)
+
+```{r}
+plot(r.sv <- sample.variogram(residuals(r.lm), locations=meuse[, c("x","y")],
+lag.dist.def=100, max.lag=2000,
+estimator="matheron"), type="l",
+main="sample variogram of residuals log(zinc)~sqrt(dist)+ffreq")
+
+lines(r.sv.spher <- fit.variogram.model(r.sv, variogram.mode="RMspheric",
+param=c(variance=0.1, nugget=0.05, scale=1000)))
+```
+
+Figure 7 : Sample variogram of regression residuals of log(zinc)~sqrt(dist)+ffreq along with fitted spherical variogram function. and output the fitted variogram parameters
+
+```{r}
+summary(r.sv.spher)
+```
+
+
+3.2 Fitting a spatial linear model by Gaussian (RE)ML
+We fit the model that we developed in the exploratory analysis now by Gaussian REML:
+
+```{r}
+ r.georob.m0.spher.reml <- georob(log(zinc)~sqrt(dist)+ffreq, meuse, locations=~x+y,
++ variogram.model="RMspheric", param=c(variance=0.1, nugget=0.05, scale=1000),
++ tuning.psi=1000)
+
+summary(r.georob.m0.spher.reml)
+
+```
+
+The diagnostics at the begin of the summary output suggest that maximization of the
+restricted log-likelihood by nlminb() was successful. Nevertheless, before we interprete
+the output, we compute the profile log-likelihood for the range to see whether the maximization has found the global maximum:
+
+```{r}
+ r.prfl.m0.spher.reml.scale <- profilelogLik(r.georob.m0.spher.reml,
+values=data.frame(scale=seq(500, 5000, by=50)))
+plot(loglik~scale, r.prfl.m0.spher.reml.scale, type="l")
+abline(v=coef(r.georob.m0.spher.reml, "variogram")["scale"], lty="dashed")
+abline(h=r.georob.m0.spher.reml$loglik - 0.5*qchisq(0.95, 1), lty="dotted")
+```
+
+
+Figure 8 : Restricted profile log-likelihood for range parameter (scale) of spherical variogram
+(vertical line: estimate of scale returned by georob(); intersection of horizontal line with profile
+defines a 95% confidence region for scale based on likelihood ratio test).
+Although the restricted log-likelihood is multimodal — which is often observed for variogram models with compact support — we were lucky to find the global maximum because
+the initial values of the variogram parameters were close to the REML estimates. Estimates of scale (range of variogram) and variance (partial sill) are correlated, nugget
+and scale less so:
+
+
+```{r}
+op <- par(mfrow=c(1,2), cex=0.66)
+plot(variance~scale, r.prfl.m0.spher.reml.scale, ylim=c(0, max(variance)), type="l")
+plot(nugget~scale, r.prfl.m0.spher.reml.scale, ylim=c(0, max(nugget)), type="l")
+par(op)
+
+```
+
+Figure 9 : Estimates of variance (partial sill) and nugget as a function of the estimate of the
+range (scale) of the variogram.
+We now study the summary output in detail: The estimated variogram parameters are
+reported along with 95% confidence intervals that are computed based on the asymptotic
+normal distribution of (RE)ML estimates from the observed Fisher information.
+The dependence of log(zinc) on sqrt(dist) is highly significant, as is the dependence
+on ffreq:
+
+```{r}
+waldtest(r.georob.m0.spher.reml, .~.-ffreq)
+```
+
+We can test equality of all pairs of intercepts by functions of the package multcomp
+
+
+```{r}
+library(multcomp)
+summary(glht(r.georob.m0.spher.reml,
+linfct = mcp(ffreq = c("ffreq1 - ffreq2 = 0", "ffreq1 - ffreq3 = 0",
+"ffreq2 - ffreq3 = 0"))))
+```
+
+
+As suspected only the intercept of ffreq1 differs from the others. Adding the interaction
+sqrt(dist):ffreq does not improve the model:
+
+```{r}
+waldtest(r.georob.m0.spher.reml, .~.+sqrt(dist):ffreq)
+```
+
+
+```{r}
+waldtest(r.georob.m0.spher.reml, .~.+soil)
+```
+
+Drift models may also be build by step-wise covariate selection based on AIC, either
+keeping the variogram parameters fixed (default) or re-estimating them afresh for each evaluated model
+
+
+```{r}
+step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil)
+```
+
+```{r}
+step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil,
++ fixed.add1.drop1=FALSE)
+```
+
+which selects the same model. Note that step-wise covariate selection by step.georob(),
+add1.georob() and drop1.georob() requires the non-restricted log-likelihood. Before
+evaluating candidate models, the initial model is therefore re-fitted by ML, which can be
+done by
+
+```{r}
+r.georob.m0.spher.ml <- update(r.georob.m0.spher.reml,
+control=control.georob(ml.method="ML"))
+
+extractAIC(r.georob.m0.spher.reml, REML=TRUE)
+```
+
+```{r}
+extractAIC(r.georob.m0.spher.ml)
+
+r.georob.m0.spher.ml
+```
+
+
+Models can be also compared by cross-validation
+
+
+```{r}
+r.cv.m0.spher.reml <- cv(r.georob.m0.spher.reml, seed=3245, lgn=TRUE)
+r.georob.m1.spher.reml <- update(r.georob.m0.spher.reml, .~.-ffreq)
+r.cv.m1.spher.reml <- cv(r.georob.m1.spher.reml, seed=3245, lgn=TRUE)
+summary(r.cv.m0.spher.reml)
+```
+
+```{r}
+summary(r.cv.m1.spher.reml)
+```
+
+Note that the argument lng=TRUE has the effect that the cross-validation predictions of a
+log-transformed response are transformed back to the original scale of the measurements.
+
+```{r}
+op <- par(mfrow=c(3,2))
+plot(r.cv.m1.spher.reml, "sc")
+plot(r.cv.m0.spher.reml, "sc", add=TRUE, col=2)
+abline(0, 1, lty="dotted")
+legend("topleft", pch=1, col=1:2, bty="n",
+legend=c("log(zinc)~sqrt(dist)", "log(zinc)~sqrt(dist)+ffreq"))
+plot(r.cv.m1.spher.reml, "lgn.sc"); plot(r.cv.m0.spher.reml, "lgn.sc", add=TRUE, col=2)
+abline(0, 1, lty="dotted")
+plot(r.cv.m1.spher.reml, "hist.pit")
+plot(r.cv.m0.spher.reml, "hist.pit", col=2)
+plot(r.cv.m1.spher.reml, "ecdf.pit")
+plot(r.cv.m0.spher.reml, "ecdf.pit", add=TRUE, col=2)
+abline(0, 1, lty="dotted")
+plot(r.cv.m1.spher.reml, "bs")
+plot(r.cv.m0.spher.reml, add=TRUE, "bs", col=2)
+par(op)
+```
+
+Figure 10 : Diagnostic plots of cross-validation predictions of REML fits of models
+log(zinc)~sqrt(dist) (blue) and log(zinc)~sqrt(dist)+ffreq (magenta).
+The simpler model gives less precise predictions (larger rmse, Brier score and therefore
+also larger continuous ranked probability score crps), but it models prediction uncertainty
+better (PIT closer to uniform distribution, see section 7.3 and Gneiting et al., 2007).
+We finish modelling by plotting residual diagnostics of the model
+r.georob.m0.spher.reml and comparing the estimated variogram with the ML
+estimate and the model fitted previously to the sample variogram of ordinary least
+squares (OLS) residuals:
+
+```{r}
+op <- par(mfrow=c(2,2), cex=0.66)
+plot(r.georob.m0.spher.reml, "ta"); abline(h=0, lty="dotted")
+plot(r.georob.m0.spher.reml, "qq.res"); abline(0, 1, lty="dotted")
+plot(r.georob.m0.spher.reml, "qq.ranef"); abline(0, 1, lty="dotted")
+plot(r.georob.m0.spher.reml, lag.dist.def=100, max.lag=2000)
+lines(r.georob.m0.spher.ml, col=2); lines(r.sv.spher, col=3)
+par(op)
+```
+
+Figure 11 : Residual diagnostic plots of model log(zinc)~sqrt(dist)+ffreq and spherical
+variogram estimated by REML (blue), ML (magenta) and fit to sample variogram (darkgreen).
+As expected REML estimates larger range and partial sill parameters. The diagnostics
+plots do not reveal serious violations of modelling assumptions.
+
