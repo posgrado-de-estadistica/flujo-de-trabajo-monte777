@@ -1,5 +1,5 @@
 ---
-title: "tarea_3"
+title: ""
 author: "Pedro Montenegro"
 date: "21/10/2019"
 output: html_document
@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+options(error = utils::recover)
 library(georob)
 library(multcomp)
 library(lattice)
@@ -17,232 +18,323 @@ library(dplyr)
 library(broom)
 library(ggplot2)
 library(ggfortify)
+library(kableExtra)
 ```
 
-## Análisis Geoestadístico análisis del modelo Gausiano para concentraciones de zinc
 
+**Análisis Geoestadístico análisis del modelo Gausiano para concentraciones de zinc**
+
+<div style="text-align:justify">
 Los datos meuse contienen información sobre la ubicación y concentraciones de metales pesados en la capa superior del suelo, junto con una serie de variables de suelo y paisaje en los lugares de observación, recogidas en una llanura del río Meuse, cerca del pueblo de Stein.
+</div>
 
-```{r}
+```{r, include=FALSE, message=FALSE, warning=FALSE}
 data(meuse, package="sp")
 levels(meuse$ffreq) <- paste("ffreq", levels(meuse$ffreq), sep="")
 levels(meuse$soil) <- paste("soil", levels(meuse$soil), sep="")
 #glimpse(meuse)
 ```
 
-# Análisis exploratorio
+**Análisis exploratorio**
 
+<div style="text-align:justify">
 Se presenta por medio de un mapa las distribución de concentracion de zinc en Meuse por medio de 155 ubicaciones, identificadas en una escala que representa mayor concentración del zinc a colores más rojos y menor concentración a colores más claros.
+</div>
 
+<div style="text-align:justify">
 Figura 1: Distribución de zinc en Meuse. Tomado tutorial y manual análisis geoestadistica con r paquete georob. 
+</div>
 
+<div style="text-align:justify">
 En el mapa se hay indicios de la dependencia entre la concentración de zinc y la distancia al río. Por tanto, se valida gráficamente mediante los factores de frecuencias de inundación y el tipo de suelo, mismo que se muestra en el siguiente gráfico.
+</div>
 
-```{r}
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 palette(trellis.par.get("superpose.symbol")$col)
-plot(zinc~dist, meuse, pch=as.integer(ffreq), col=soil)
+plot(zinc~dist, meuse, pch=as.integer(ffreq), col=soil, main="Fig. 2 Distribución de zinc y distancia caracterizado \n por frecuencia de inundación y tipo suelo")
 legend("topright", col=c(rep(1, nlevels(meuse$ffreq)), 1:nlevels(meuse$soil)), pch=c(1:nlevels(meuse$ffreq), rep(1, nlevels(meuse$soil))), bty="n", legend=c(levels(meuse$ffreq), levels(meuse$soil)))
 ```
 
+<div style="text-align:justify">
+Figure 2 : Presenta la dependencia entre la concentración de zinc sobre la distancia de río, frecuencia de las innundaciones y el tipo de suelo.
+</div>
 
-Figure 2 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq) and soil type.
+<div style="text-align:justify">
+La relación del zinc es no lineal con respecto a la distancia del río, esta parece que depende de la frecuencia de las inundaciones, se puede observar mayor concentración de zinc en sitios inundados con mayor frecuencia. También, la dispersión de zinc aumenta con respecto a la distancia, significando aumento de la concentración de zinc mayor varianza no constante. Para corregir lo anterior se utiliza una función logaritmica del zinc y se logra estabilizar la varianza:
+</div>
 
-
-el zinc depende no linealmente de dist y parece además depender de ffreq (mayor concentración en sitios inundados con mayor frecuencia). Además, la dispersión de zinc para una distancia dada aumenta con la distancia decreciente (= aumento de la concentración de zinc, variación heteroscedastica). Usamos log (zinc) para estabilizar la varianza:
-
-```{r}
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 xyplot(log(zinc)~dist | ffreq, meuse, groups=soil, panel=function(x, y, ...){
 panel.xyplot(x, y, ...)
 panel.loess(x, y, ...)
-   }, auto.key=TRUE)
+   }, auto.key=list(corner = c(1, 0.8)),main= "Fig. 3 Modelo de log(zinc) ~ distancia para las frecuencia de inundación")
 
 ```
+<div style="text-align:justify">
+En la figura 3 se muestra la correción con la función logaritmica sobre dependencia entre la concentración de zinc sobre la distancia de río, frecuencia de las innundaciones y el tipo de suelo.
+La relación aún no es lineal, para corregir se transforma de la raíz cuadrada en la distancia en el río.
+</div>
 
-Figure 3 : Dependence of zinc on distance to river, frequency of flooding (ffreq) and soil
-type.
-The relation log(zinc)~dist is still non-linear, hence we transform dist by √ :
 
-```{r}
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 xyplot(log(zinc)~sqrt(dist) | ffreq, meuse, groups=soil, panel=function(x, y, ...){
   panel.xyplot(x, y, ...) 
   panel.loess(x, y, ...) 
   panel.lmline(x, y, lty="dashed", ...)
-  }, auto.key=TRUE)
+  }, auto.key=list(corner = c(1, 0.8)),main= "Fig. 4 Relación log(zinc) ~ sqrt(distancia) \n para las frecuencia de inundación")
 ```
 
-Figure 4 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq)
-and soil type.
-which approximately linearizes the relation.
-The slopes of the regression lines log(zinc)~sqrt(dist) are about the same for all levels
-of ffreq. But the intercept of ffreq1 differs from the intercepts of the other levels. Hence,
-as an initial drift model we use
+<div style="text-align:justify">
+Mediante la transformación se puede observar que las pendientes de las líneas de regresión log (zinc) ~ sqrt (dist) son casi iguales para todos los niveles de frecuencia de inundaciones.
+</div>
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 r.lm <- lm(log(zinc)~sqrt(dist)+ffreq, meuse)
-tidy(summary(r.lm))
+tidy(summary(r.lm))%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Modelo log (zinc) ~ sqrt (dist) " = 5))
 ```
 
-Diagnostico de los gráficos de residuos
+**Diagnóstico de los gráficos de residuos**
 
-```{r}
+<div style="text-align:justify">
+A continuación se presenta un diagnostico de los residuos para corroborar los supuestos de los del modelo, validando la normalidad, homocedasticidad, valores atipicos y valores influenciales.
+</div>
+
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 #op <- par(mfrow=c(2, 2)); plot(r.lm); par(op)
-autoplot(r.lm)
+autoplot(r.lm,title = "Fig. 5 Gráficos de diagnóstico de Residuos")
 ```
 
-
+<div style="text-align:justify">
 Los gráficos de residuos no muestran violación de los supuestos, en los residuos en comparación con los ajustados se comprueba que los residuos se distribuyen aleatoriamente con varianza constante, de la misma forma los residuos estandarizados presentan una distribución normal observada en el gráfico de normalidad.
+</div>
 
+<div style="text-align:justify">
 En el caso de los valores influenciales evaluados por las distancias de cooks se concentra la mayor parte entre -2 y 2, con pocos casos que son atípicos e influenciales.
+</div>
 
+<div style="text-align:justify">
+El siguiente gráfico, muestra el variograma de los residuos para las 4 direcciones Norte-Sur, Noreste-Sureste,
+Este-Oeste, Sureste-Noreste por el método de estimación de momentos
+</div>
 
-Next, we compute the sample variogram of the residuals for the 4 directions N-S, NE-SW,
-E-W, SE-NW by the methods-of-moments estimator:
-
-```{r}
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 plot(sample.variogram(residuals(r.lm), locations=meuse[, c("x","y")],
 lag.dist.def=100, max.lag=2000, xy.angle.def=c(0, 22.5, 67.5, 112.5, 157.5, 180),
 estimator="matheron"), type="l",
-main="Muestra de los residuos del variograma log(zinc)~sqrt(dist)+ffreq")
+main="Fig. 6 Muestra de los residuos del variograma log(zinc)~sqrt(dist)+ffreq")
 ```
 
+<div style="text-align:justify">
+En la figura 6, el variograma de muestra dependiente de la dirección de los residuos de regresión para el modelo log (zinc) ~ sqrt (dist) + ffreq.
+</div>
 
-Figure 6 : Direction-dependent sample variogram of regression residuals of log(zinc)~sqrt(dist)+ffreq.
+<div style="text-align:justify">
+Los residuos parecen ser espacialmente dependientes. Para los rezagos cortos no existe una dependencia clara de la dirección, por lo tanto, suponemos que la autocorrelación es isotrópica.
+</div>
 
-The residuals appear to be spatially dependent. For the short lags there is no clear dependence on direction, hence, we assume that auto-correlation is isotropic.
+<div style="text-align:justify">
+Para completar el ejercicio de modelado exploratorio, se calcula el variograma de muestra independiente de la dirección y ajustamos un modelo de variograma esférico por mínimos cuadrados no lineales ponderados, usando los pesos de Cressie’s.
+</div>
 
-To complete the exploratory modelling exercise, we compute the direction-indepdendent sample variogram and fit a spherical variogram model by weighted non-linear least squares (using Cressie’s weights)
-
-```{r}
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 plot(r.sv <- sample.variogram(residuals(r.lm), locations=meuse[, c("x","y")],
 lag.dist.def=100, max.lag=2000,
 estimator="matheron"), type="l",
-main="Muestra de los residuos del variograma log(zinc)~sqrt(dist)+ffreq")
+main="Fig. 7 Muestra de los residuos del variograma log(zinc)~sqrt(dist)+ffreq")
 
 lines(r.sv.spher <- fit.variogram.model(r.sv, variogram.mode="RMspheric",
 param=c(variance=0.1, nugget=0.05, scale=1000)))
 ```
 
-Figure 7 : Sample variogram of regression residuals of log(zinc)~sqrt(dist)+ffreq along with fitted spherical variogram function. and output the fitted variogram parameters
+<div style="text-align:justify">
+La figura 7 muestra el variograma de los residuos para el modelo de regresión definido por log (zinc) ~ sqrt (dist) + ffreq, utilizando la función de variograma esférico ajustado
+</div>
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 a <-(summary(r.sv.spher))
-
-tidy((a$param.aniso)[[1]])
-
-rsq<-(a$sse);rsq
+tidy((a$param.aniso)[[1]])%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Modelo regresión de los residuos log (zinc) ~ sqrt (dist) " = 4))
 ```
 
 
-# 3.2 Fitting a spatial linear model by Gaussian (RE)ML
+Ajuste del modelo lineal espacial mediante un modelo gausianno de máxima verosimilitud (RE)
 
-We fit the model that we developed in the exploratory analysis now by Gaussian REML:
+<div style="text-align:justify">
+Se ajusta el modelo por Gaussian REML y se obtienen los siguientes resultados:
+</div>
 
-```{r}
+```{r,echo=FALSE,message=FALSE, warning=FALSE}
 r.georob.m0.spher.reml <- georob(log(zinc)~sqrt(dist)+ffreq, meuse, locations=~x+y,
 variogram.model="RMspheric", param=c(variance=0.1, nugget=0.05, scale=1000),
 tuning.psi=1000)
 
-summary(r.georob.m0.spher.reml)
+a1 <-summary(r.georob.m0.spher.reml)
 
+tidy(a1$coefficients)%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Modelo regresión coeficientes ajustado Gaussian REML" = 5))
+
+tidy((a1$param.aniso)[[1]])%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Modelo regresión de los residuos log (zinc) ~ sqrt (dist)" = 4))
 ```
 
-The diagnostics at the begin of the summary output suggest that maximization of the restricted log-likelihood by nlminb() was successful. Nevertheless, before we interprete the output, we compute the profile log-likelihood for the range to see whether the maximization has found the global maximum:
+**Especificación del modelo**
 
-```{r}
+```{r,echo=FALSE,message=FALSE, warning=FALSE}
+a1$variogram.object[[1]]
+```
+
+<div style="text-align:justify">
+Los resultado de la máximización de la probabilidad de verosimilitud por nlminb es exitosa. Sin embargo, antes de interpretar, se calcula la probabilidad de registro del perfil para el rango para ver si la maximización ha encontrado el máximo global.
+</div>
+
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 r.prfl.m0.spher.reml.scale <- profilelogLik(r.georob.m0.spher.reml,
 values=data.frame(scale=seq(500, 5000, by=50)))
-plot(loglik~scale, r.prfl.m0.spher.reml.scale, type="l")
+plot(loglik~scale, r.prfl.m0.spher.reml.scale, type="l",main="Fig. 8 Rango de maximización de la verosimilitud")
 abline(v=coef(r.georob.m0.spher.reml, "variogram")["scale"], lty="dashed")
 abline(h=r.georob.m0.spher.reml$loglik - 0.5*qchisq(0.95, 1), lty="dotted")
 ```
 
+<div style="text-align:justify">
 
-Figure 8 : Restricted profile log-likelihood for range parameter (scale) of spherical variogram (vertical line: estimate of scale returned by georob(); intersection of horizontal line with profile defines a 95% confidence region for scale based on likelihood ratio test).
+En la figura 8, se muestra la probabilidad de verosimilitud por el parámetro de rango de escala, del variograma esférico (línea vertical: estimación de la escala devuelta por georob (); la intersección de la línea horizontal con el perfil define una región de confianza del 95% para la escala basada en la prueba de razón de verosimilitud).
+</div>
 
-Although the restricted log-likelihood is multimodal — which is often observed for variogram models with compact support — we were lucky to find the global maximum because the initial values of the variogram parameters were close to the REML estimates. Estimates of scale (range of variogram) and variance (partial sill) are correlated, nugget and scale less so:
+<div style="text-align:justify">
 
-```{r}
+Aunque la probabilidad restringida de log verosimilitud es multimodal, que a menudo se observa para modelos de variograma con soporte compacto, se encontra el máximo global porque los valores iniciales de los parámetros del variograma estaban cerca de las estimaciones REML. Las estimaciones de escala (rango de variograma) y varianza (umbral parcial) nugget y escala están correlacionadas.
+</div>
+
+
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 op <- par(mfrow=c(1,2), cex=0.66)
-plot(variance~scale, r.prfl.m0.spher.reml.scale, ylim=c(0, max(variance)), type="l")
-plot(nugget~scale, r.prfl.m0.spher.reml.scale, ylim=c(0, max(nugget)), type="l")
+plot(variance~scale, r.prfl.m0.spher.reml.scale, ylim=c(0, max(variance)), type="l",main="Fig. 9.1 Estimación de la varianza del variograma con máxima varianza")
+plot(nugget~scale, r.prfl.m0.spher.reml.scale, ylim=c(0, max(nugget)), type="l",main="Fig. 9.2 Estimación de la varianza del variograma con máximo nugget")
 par(op)
-
 ```
 
-Figure 9 : Estimates of variance (partial sill) and nugget as a function of the estimate of the range (scale) of the variogram.
+<div style="text-align:justify">
+La figura 9.1, presenta las estimaciones de varianza (umbral parcial) y nugget en función de la estimación del rango (escala) del variograma.
+</div>
 
-We now study the summary output in detail: The estimated variogram parameters are reported along with 95% confidence intervals that are computed based on the asymptotic normal distribution of (RE)ML estimates from the observed Fisher information. The dependence of log(zinc) on sqrt(dist) is highly significant, as is the dependence on ffreq:
+<div style="text-align:justify">
+Ahora nos interesa el resultado de los parámetros estimados del variograma junto con los intervalos de confianza del 95% que se calculan en función de la distribución asintótica normal de las estimaciones de (RE) ML a partir de la información de Fisher observada. La dependencia de log (zinc) en sqrt (dist) es altamente significativa, al igual que la dependencia de la frecuencia de inundaciones.
+</div>
 
-```{r}
-waldtest(r.georob.m0.spher.reml, .~.-ffreq)
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+a2<- waldtest(r.georob.m0.spher.reml, .~.-ffreq)
+
+tidy(a2)%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Prueba wald Información de Fischer" = 4))
 ```
 
-We can test equality of all pairs of intercepts by functions of the package multcomp
+<div style="text-align:justify">
+Se puede probar la igualdad de todos los pares de intercepciones por funciones del paquete multcomp
+</div>
 
-```{r}
-summary(glht(r.georob.m0.spher.reml,
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+b<-summary(glht(r.georob.m0.spher.reml,
 linfct = mcp(ffreq = c("ffreq1 - ffreq2 = 0", "ffreq1 - ffreq3 = 0",
 "ffreq2 - ffreq3 = 0"))))
+
+tidy(b)%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Prueba de pares" = 6))
 ```
 
-As suspected only the intercept of ffreq1 differs from the others. Adding the interaction sqrt(dist):ffreq does not improve the model:
+<div style="text-align:justify">
+Como se sospecha, solo la intercepción de ffreq1 difiere de las demás. Agregar la interacción sqrt (dist): ffreq no mejora el modelo
+</div>
 
-```{r}
-waldtest(r.georob.m0.spher.reml, .~.+sqrt(dist):ffreq)
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+a3<- waldtest(r.georob.m0.spher.reml, .~.+sqrt(dist):ffreq)
+
+tidy(a3)%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Prueba wald Información de Fischer distancia y inundaciones" = 4))
 ```
 
 
-```{r}
-waldtest(r.georob.m0.spher.reml, .~.+soil)
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+a4<- waldtest(r.georob.m0.spher.reml, .~.+soil)
+
+
+tidy(a4)%>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Prueba wald Información de Fischer Suelo" = 4))
 ```
 
-Drift models may also be build by step-wise covariate selection based on AIC, either keeping the variogram parameters fixed (default) or re-estimating them afresh for each evaluated model
+<div style="text-align:justify">
+Los modelos también se pueden construir mediante una selección de covariables paso a paso con el criterio en AIC, ya sea manteniendo los parámetros del variograma fijos (por defecto) o volviendo a estimarlos de nuevo para cada modelo evaluado
+</div>
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil,
 fixed.add1.drop1=FALSE)
 ```
 
-which selects the same model. Note that step-wise covariate selection by step.georob(),
-add1.georob() and drop1.georob() requires the non-restricted log-likelihood. Before
-evaluating candidate models, the initial model is therefore re-fitted by ML, which can be done by
+<div style="text-align:justify">
+La selección de covariables paso a paso por la función step.georob, add1.georob y drop1.georob() requiere la probabilidad de verosimilitud no restringida. Antes de evaluar los modelos candidatos, ML ajusta el modelo inicial, se hace de la siguiente forma
+</div>
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 r.georob.m0.spher.ml <- update(r.georob.m0.spher.reml,
 control=control.georob(ml.method="ML"))
 
 extractAIC(r.georob.m0.spher.reml, REML=TRUE)
 ```
 
-```{r}
+```{r, include=FALSE, message=FALSE, warning=FALSE}
 extractAIC(r.georob.m0.spher.ml)
 
 r.georob.m0.spher.ml
 ```
 
 
-Models can be also compared by cross-validation
+<div style="text-align:justify">
+Los modelos se comparan mediante validación cruzada
+</div>
 
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 r.cv.m0.spher.reml <- cv(r.georob.m0.spher.reml, seed=3245, lgn=TRUE)
 r.georob.m1.spher.reml <- update(r.georob.m0.spher.reml, .~.-ffreq)
 r.cv.m1.spher.reml <- cv(r.georob.m1.spher.reml, seed=3245, lgn=TRUE)
+
 summary(r.cv.m0.spher.reml)
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 summary(r.cv.m1.spher.reml)
 ```
 
-Note that the argument lng=TRUE has the effect that the cross-validation predictions of a
-log-transformed response are transformed back to the original scale of the measurements.
+<div style="text-align:justify">
+Tenga en cuenta que el argumento $lng = TRUE$ tiene el efecto de que las predicciones de validación cruzada de una respuesta transformada logarítmica se transforman nuevamente a la escala original de las mediciones.
+</div>
 
-```{r}
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 op <- par(mfrow=c(3,2))
 plot(r.cv.m1.spher.reml, "sc")
 plot(r.cv.m0.spher.reml, "sc", add=TRUE, col=2)
@@ -258,31 +350,33 @@ plot(r.cv.m0.spher.reml, "ecdf.pit", add=TRUE, col=2)
 abline(0, 1, lty="dotted")
 plot(r.cv.m1.spher.reml, "bs")
 plot(r.cv.m0.spher.reml, add=TRUE, "bs", col=2)
+mtext("Fig. 10 Gráficos de diagnóstico de las predicciones por CV",  outer = TRUE)
 par(op)
 ```
 
-Figure 10 : Diagnostic plots of cross-validation predictions of REML fits of models
-log(zinc)~sqrt(dist) (blue) and log(zinc)~sqrt(dist)+ffreq (magenta).
-The simpler model gives less precise predictions (larger rmse, Brier score and therefore
-also larger continuous ranked probability score crps), but it models prediction uncertainty
-better (PIT closer to uniform distribution, see section 7.3 and Gneiting et al., 2007).
-We finish modelling by plotting residual diagnostics of the model
-r.georob.m0.spher.reml and comparing the estimated variogram with the ML
-estimate and the model fitted previously to the sample variogram of ordinary least
-squares (OLS) residuals:
+<div style="text-align:justify">
 
-```{r}
+La figura 10 muestra los gráficos de diagnóstico de predicciones de validación cruzada con ajustes REML de modelos log (zinc) ~ sqrt (dist) (azul) y log (zinc) ~ sqrt (dist) + ffreq (magenta).
+
+El modelo más simple proporciona predicciones menos precisas (mayor $RMSE$, puntaje de Brier y, por lo tanto, también mayor puntuación de probabilidad de clasificación continua), pero modela mejor la incertidumbre de predicción (PIT más cercano a la distribución uniforme, ver sección 7.3 y Gneiting et al., 2007).
+
+Terminamos el modelado trazando diagnósticos residuales del modelo. $r.georob.m0.spher.reml$ y comparando el variograma estimado con la estimación de ML y el modelo ajustado previamente al variograma de muestra de residuos de mínimos cuadrados ordinarios (MCO)
+</div>
+
+```{r,fig.align='center',out.extra='angle=90', echo=FALSE, warning=FALSE, message=FALSE}
 op <- par(mfrow=c(2,2), cex=0.66)
 plot(r.georob.m0.spher.reml, "ta"); abline(h=0, lty="dotted")
 plot(r.georob.m0.spher.reml, "qq.res"); abline(0, 1, lty="dotted")
 plot(r.georob.m0.spher.reml, "qq.ranef"); abline(0, 1, lty="dotted")
 plot(r.georob.m0.spher.reml, lag.dist.def=100, max.lag=2000)
 lines(r.georob.m0.spher.ml, col=2); lines(r.sv.spher, col=3)
+mtext("Fig. 11 Gráficos de diagnóstico de supuestos de los residuos", outer = TRUE)
 par(op)
 ```
 
-Figure 11 : Residual diagnostic plots of model log(zinc)~sqrt(dist)+ffreq and spherical
-variogram estimated by REML (blue), ML (magenta) and fit to sample variogram (darkgreen).
-As expected REML estimates larger range and partial sill parameters. The diagnostics
-plots do not reveal serious violations of modelling assumptions.
+<div style="text-align:justify">
+La figura 11, presenta los gráficos de diagnóstico residual del modelo de registro (zinc) ~ sqrt (dist) + ffreq y variograma esférico estimado por REML (azul), ML (magenta) y ajustado al variograma de muestra (verde oscuro).
+
+Como se esperaba, REML estima un rango mayor y parámetros de umbral parcial. Las gráficas de diagnóstico no revelan violaciones graves de los supuestos de modelado.
+</div>
 
