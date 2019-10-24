@@ -5,15 +5,18 @@ date: "21/10/2019"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
 library(georob)
+library(multcomp)
 library(lattice)
 library(dplyr)
 library(broom)
+library(ggplot2)
+library(ggfortify)
 ```
 
 ## Análisis Geoestadístico análisis del modelo Gausiano para concentraciones de zinc
@@ -79,15 +82,19 @@ r.lm <- lm(log(zinc)~sqrt(dist)+ffreq, meuse)
 tidy(summary(r.lm))
 ```
 
-The residual diagnostic plots
+Diagnostico de los gráficos de residuos
 
 ```{r}
-op <- par(mfrow=c(2, 2)); plot(r.lm); par(op)
+#op <- par(mfrow=c(2, 2)); plot(r.lm); par(op)
+autoplot(r.lm)
 ```
 
 
-Figure 5 : Residual diagnostic plots for linear drift model log(zinc)~sqrt(dist)+ffreq.
-do not show violations of modelling assumptions.
+Los gráficos de residuos no muestran violación de los supuestos, en los residuos en comparación con los ajustados se comprueba que los residuos se distribuyen aleatoriamente con varianza constante, de la misma forma los residuos estandarizados presentan una distribución normal observada en el gráfico de normalidad.
+
+En el caso de los valores influenciales evaluados por las distancias de cooks se concentra la mayor parte entre -2 y 2, con pocos casos que son atípicos e influenciales.
+
+
 Next, we compute the sample variogram of the residuals for the 4 directions N-S, NE-SW,
 E-W, SE-NW by the methods-of-moments estimator:
 
@@ -95,23 +102,21 @@ E-W, SE-NW by the methods-of-moments estimator:
 plot(sample.variogram(residuals(r.lm), locations=meuse[, c("x","y")],
 lag.dist.def=100, max.lag=2000, xy.angle.def=c(0, 22.5, 67.5, 112.5, 157.5, 180),
 estimator="matheron"), type="l",
-main="sample variogram of residuals log(zinc)~sqrt(dist)+ffreq")
+main="Muestra de los residuos del variograma log(zinc)~sqrt(dist)+ffreq")
 ```
 
 
-Figure 6 : Direction-dependent sample variogram of regression residuals of
-log(zinc)~sqrt(dist)+ffreq.
-The residuals appear to be spatially dependent. For the short lags there is no clear
-dependence on direction, hence, we assume that auto-correlation is isotropic.
-To complete the exploratory modelling exercise, we compute the direction-indepdendent
-sample variogram and fit a spherical variogram model by weighted non-linear least squares
-(using Cressie’s weights)
+Figure 6 : Direction-dependent sample variogram of regression residuals of log(zinc)~sqrt(dist)+ffreq.
+
+The residuals appear to be spatially dependent. For the short lags there is no clear dependence on direction, hence, we assume that auto-correlation is isotropic.
+
+To complete the exploratory modelling exercise, we compute the direction-indepdendent sample variogram and fit a spherical variogram model by weighted non-linear least squares (using Cressie’s weights)
 
 ```{r}
 plot(r.sv <- sample.variogram(residuals(r.lm), locations=meuse[, c("x","y")],
 lag.dist.def=100, max.lag=2000,
 estimator="matheron"), type="l",
-main="sample variogram of residuals log(zinc)~sqrt(dist)+ffreq")
+main="Muestra de los residuos del variograma log(zinc)~sqrt(dist)+ffreq")
 
 lines(r.sv.spher <- fit.variogram.model(r.sv, variogram.mode="RMspheric",
 param=c(variance=0.1, nugget=0.05, scale=1000)))
@@ -120,28 +125,31 @@ param=c(variance=0.1, nugget=0.05, scale=1000)))
 Figure 7 : Sample variogram of regression residuals of log(zinc)~sqrt(dist)+ffreq along with fitted spherical variogram function. and output the fitted variogram parameters
 
 ```{r}
-summary(r.sv.spher)
+a <-(summary(r.sv.spher))
+
+tidy((a$param.aniso)[[1]])
+
+rsq<-(a$sse);rsq
 ```
 
 
-3.2 Fitting a spatial linear model by Gaussian (RE)ML
+# 3.2 Fitting a spatial linear model by Gaussian (RE)ML
+
 We fit the model that we developed in the exploratory analysis now by Gaussian REML:
 
 ```{r}
- r.georob.m0.spher.reml <- georob(log(zinc)~sqrt(dist)+ffreq, meuse, locations=~x+y,
-+ variogram.model="RMspheric", param=c(variance=0.1, nugget=0.05, scale=1000),
-+ tuning.psi=1000)
+r.georob.m0.spher.reml <- georob(log(zinc)~sqrt(dist)+ffreq, meuse, locations=~x+y,
+variogram.model="RMspheric", param=c(variance=0.1, nugget=0.05, scale=1000),
+tuning.psi=1000)
 
 summary(r.georob.m0.spher.reml)
 
 ```
 
-The diagnostics at the begin of the summary output suggest that maximization of the
-restricted log-likelihood by nlminb() was successful. Nevertheless, before we interprete
-the output, we compute the profile log-likelihood for the range to see whether the maximization has found the global maximum:
+The diagnostics at the begin of the summary output suggest that maximization of the restricted log-likelihood by nlminb() was successful. Nevertheless, before we interprete the output, we compute the profile log-likelihood for the range to see whether the maximization has found the global maximum:
 
 ```{r}
- r.prfl.m0.spher.reml.scale <- profilelogLik(r.georob.m0.spher.reml,
+r.prfl.m0.spher.reml.scale <- profilelogLik(r.georob.m0.spher.reml,
 values=data.frame(scale=seq(500, 5000, by=50)))
 plot(loglik~scale, r.prfl.m0.spher.reml.scale, type="l")
 abline(v=coef(r.georob.m0.spher.reml, "variogram")["scale"], lty="dashed")
@@ -149,13 +157,9 @@ abline(h=r.georob.m0.spher.reml$loglik - 0.5*qchisq(0.95, 1), lty="dotted")
 ```
 
 
-Figure 8 : Restricted profile log-likelihood for range parameter (scale) of spherical variogram
-(vertical line: estimate of scale returned by georob(); intersection of horizontal line with profile
-defines a 95% confidence region for scale based on likelihood ratio test).
-Although the restricted log-likelihood is multimodal — which is often observed for variogram models with compact support — we were lucky to find the global maximum because
-the initial values of the variogram parameters were close to the REML estimates. Estimates of scale (range of variogram) and variance (partial sill) are correlated, nugget
-and scale less so:
+Figure 8 : Restricted profile log-likelihood for range parameter (scale) of spherical variogram (vertical line: estimate of scale returned by georob(); intersection of horizontal line with profile defines a 95% confidence region for scale based on likelihood ratio test).
 
+Although the restricted log-likelihood is multimodal — which is often observed for variogram models with compact support — we were lucky to find the global maximum because the initial values of the variogram parameters were close to the REML estimates. Estimates of scale (range of variogram) and variance (partial sill) are correlated, nugget and scale less so:
 
 ```{r}
 op <- par(mfrow=c(1,2), cex=0.66)
@@ -165,13 +169,9 @@ par(op)
 
 ```
 
-Figure 9 : Estimates of variance (partial sill) and nugget as a function of the estimate of the
-range (scale) of the variogram.
-We now study the summary output in detail: The estimated variogram parameters are
-reported along with 95% confidence intervals that are computed based on the asymptotic
-normal distribution of (RE)ML estimates from the observed Fisher information.
-The dependence of log(zinc) on sqrt(dist) is highly significant, as is the dependence
-on ffreq:
+Figure 9 : Estimates of variance (partial sill) and nugget as a function of the estimate of the range (scale) of the variogram.
+
+We now study the summary output in detail: The estimated variogram parameters are reported along with 95% confidence intervals that are computed based on the asymptotic normal distribution of (RE)ML estimates from the observed Fisher information. The dependence of log(zinc) on sqrt(dist) is highly significant, as is the dependence on ffreq:
 
 ```{r}
 waldtest(r.georob.m0.spher.reml, .~.-ffreq)
@@ -179,17 +179,13 @@ waldtest(r.georob.m0.spher.reml, .~.-ffreq)
 
 We can test equality of all pairs of intercepts by functions of the package multcomp
 
-
 ```{r}
-library(multcomp)
 summary(glht(r.georob.m0.spher.reml,
 linfct = mcp(ffreq = c("ffreq1 - ffreq2 = 0", "ffreq1 - ffreq3 = 0",
 "ffreq2 - ffreq3 = 0"))))
 ```
 
-
-As suspected only the intercept of ffreq1 differs from the others. Adding the interaction
-sqrt(dist):ffreq does not improve the model:
+As suspected only the intercept of ffreq1 differs from the others. Adding the interaction sqrt(dist):ffreq does not improve the model:
 
 ```{r}
 waldtest(r.georob.m0.spher.reml, .~.+sqrt(dist):ffreq)
@@ -200,9 +196,7 @@ waldtest(r.georob.m0.spher.reml, .~.+sqrt(dist):ffreq)
 waldtest(r.georob.m0.spher.reml, .~.+soil)
 ```
 
-Drift models may also be build by step-wise covariate selection based on AIC, either
-keeping the variogram parameters fixed (default) or re-estimating them afresh for each evaluated model
-
+Drift models may also be build by step-wise covariate selection based on AIC, either keeping the variogram parameters fixed (default) or re-estimating them afresh for each evaluated model
 
 ```{r}
 step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil)
@@ -210,13 +204,12 @@ step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil)
 
 ```{r}
 step(r.georob.m0.spher.reml, scope=log(zinc)~ffreq*sqrt(dist)+soil,
-+ fixed.add1.drop1=FALSE)
+fixed.add1.drop1=FALSE)
 ```
 
 which selects the same model. Note that step-wise covariate selection by step.georob(),
 add1.georob() and drop1.georob() requires the non-restricted log-likelihood. Before
-evaluating candidate models, the initial model is therefore re-fitted by ML, which can be
-done by
+evaluating candidate models, the initial model is therefore re-fitted by ML, which can be done by
 
 ```{r}
 r.georob.m0.spher.ml <- update(r.georob.m0.spher.reml,
