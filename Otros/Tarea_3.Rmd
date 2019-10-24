@@ -13,31 +13,27 @@ knitr::opts_chunk$set(echo = TRUE)
 library(georob)
 library(lattice)
 library(dplyr)
+library(broom)
 ```
 
+## Análisis Geoestadístico análisis del modelo Gausiano para concentraciones de zinc
 
-The package sp provides this data set. According to the help page, it “gives locations and
-topsoil heavy metal concentrations, along with a number of soil and landscape variable at
-the observation locations, collected in a flood plain of the river Meuse, near the village of
-Stein (NL)”.
+Los datos meuse contienen información sobre la ubicación y concentraciones de metales pesados en la capa superior del suelo, junto con una serie de variables de suelo y paisaje en los lugares de observación, recogidas en una llanura del río Meuse, cerca del pueblo de Stein.
 
 ```{r}
 data(meuse, package="sp")
 levels(meuse$ffreq) <- paste("ffreq", levels(meuse$ffreq), sep="")
 levels(meuse$soil) <- paste("soil", levels(meuse$soil), sep="")
-str(meuse)
+#glimpse(meuse)
 ```
 
+# Análisis exploratorio
 
-Bivand et al. (2013) use the data to illustrate geostatistical analyses by the package gstat
-(Pebesma, 2004). We analyse here the data on zinc in the topsoil (Figure 1).
+Se presenta por medio de un mapa las distribución de concentracion de zinc en Meuse por medio de 155 ubicaciones, identificadas en una escala que representa mayor concentración del zinc a colores más rojos y menor concentración a colores más claros.
 
-Figure 1 : Meuse data set: zinc concentration at 155 locations in floodplain of river Meuse near
-Stein (NL) shown in Google Earth™.
-Figure 1 suggests that zinc concentration depends on distance to the river. We check
-graphically whether the two factors ffreq (frequency of flooding) and soil (type) also
-influence zinc:
+Figura 1: Distribución de zinc en Meuse. Tomado tutorial y manual análisis geoestadistica con r paquete georob. 
 
+En el mapa se hay indicios de la dependencia entre la concentración de zinc y la distancia al río. Por tanto, se valida gráficamente mediante los factores de frecuencias de inundación y el tipo de suelo, mismo que se muestra en el siguiente gráfico.
 
 ```{r}
 palette(trellis.par.get("superpose.symbol")$col)
@@ -46,15 +42,16 @@ legend("topright", col=c(rep(1, nlevels(meuse$ffreq)), 1:nlevels(meuse$soil)), p
 ```
 
 
-Figure 2 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq)
-and soil type.
-zinc depends non-linearly on dist and seems in addition to depend on ffreq (larger
-concentration at more often flooded sites). Furthermore, the scatter of zinc for given distance increases with decreasing distance (= increasing zinc concentration, heteroscedastic
-variation). We use log(zinc) to stabilize the variance:
+Figure 2 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq) and soil type.
 
+
+el zinc depende no linealmente de dist y parece además depender de ffreq (mayor concentración en sitios inundados con mayor frecuencia). Además, la dispersión de zinc para una distancia dada aumenta con la distancia decreciente (= aumento de la concentración de zinc, variación heteroscedastica). Usamos log (zinc) para estabilizar la varianza:
 
 ```{r}
- xyplot(log(zinc)~dist | ffreq, meuse, groups=soil, panel=function(x, y, ...){panel.xyplot(x, y, ...) panel.loess(x, y, ...)}, auto.key=TRUE)
+xyplot(log(zinc)~dist | ffreq, meuse, groups=soil, panel=function(x, y, ...){
+panel.xyplot(x, y, ...)
+panel.loess(x, y, ...)
+   }, auto.key=TRUE)
 
 ```
 
@@ -63,7 +60,11 @@ type.
 The relation log(zinc)~dist is still non-linear, hence we transform dist by √ :
 
 ```{r}
-xyplot(log(zinc)~sqrt(dist) | ffreq, meuse, groups=soil, panel=function(x, y, ...){panel.xyplot(x, y, ...) panel.loess(x, y, ...) panel.lmline(x, y, lty="dashed", ...)}, auto.key=TRUE)
+xyplot(log(zinc)~sqrt(dist) | ffreq, meuse, groups=soil, panel=function(x, y, ...){
+  panel.xyplot(x, y, ...) 
+  panel.loess(x, y, ...) 
+  panel.lmline(x, y, lty="dashed", ...)
+  }, auto.key=TRUE)
 ```
 
 Figure 4 : Dependence of zinc concentration on distance to river, frequency of flooding (ffreq)
@@ -75,8 +76,7 @@ as an initial drift model we use
 
 ```{r}
 r.lm <- lm(log(zinc)~sqrt(dist)+ffreq, meuse)
-summary(r.lm)
-
+tidy(summary(r.lm))
 ```
 
 The residual diagnostic plots

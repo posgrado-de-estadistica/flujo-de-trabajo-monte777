@@ -71,6 +71,8 @@ africa %>%
   theme_minimal() + 
   ggtitle("Distribución del Índice de Desarrollo Humano",
          subtitle= "Africa")
+
+class(africa)
 ```
 
 Row3 {data-width=200}

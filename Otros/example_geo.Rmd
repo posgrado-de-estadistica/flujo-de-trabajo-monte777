@@ -99,7 +99,7 @@ ubicaciones %>%
   filter(lon < -82, lon > -86, lat < 11.15, lat > 8) %>%
   ggplot(aes(x = lon, y = lat))  +
   geom_polygon(data = map, aes(x = long, y = lat, group = group),
-  fill = "seagreen", col = "white", alpha = 0.8) +
+   fill = "seagreen", col = "white", alpha = 0.8) +
   geom_point(col = "#fab31e", size = 1.2) + coord_map() +
   theme(axis.text = element_blank(), axis.ticks = element_blank(),
         panel.background = element_blank(), legend.position = "none",
