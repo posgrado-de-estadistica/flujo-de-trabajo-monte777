@@ -235,3 +235,10 @@ plot(v, v.fit, pch = 3, panel = function(x,y,subscripts,...) {
 }
 )
 
+### hoy
+
+El ajuste de 800 es a prueba y errorCondition(), se estima el modelo y se va cambiando el 
+variogramSurface(plot(vt), plot(v.fit,add=T)) que mis datos ajustados sean similares
+0
+
+krigen por bloques pero hay que definirlos nosotros, por cada distrito
