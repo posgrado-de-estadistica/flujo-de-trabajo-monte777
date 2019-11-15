@@ -203,6 +203,7 @@ apply(mat, 1, sum)[1:15]
 ## ---- auto10-------------------------------------------------------------
 moran.plot(y, rwm)
 
+Primera etapa si hay autocorrelación estadística.
 
 
 
