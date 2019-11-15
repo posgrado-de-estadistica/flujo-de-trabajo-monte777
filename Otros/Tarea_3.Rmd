@@ -296,7 +296,7 @@ fixed.add1.drop1=FALSE)
 ```
 
 <div style="text-align:justify">
-La selección de covariables paso a paso por la función step.georob, add1.georob y drop1.georob() requiere la probabilidad de verosimilitud no restringida. Antes de evaluar los modelos candidatos, ML ajusta el modelo inicial, se hace de la siguiente forma
+La selección de covariables paso a paso por la función step.georob, add1.georob y drop1.georob requiere la probabilidad de verosimilitud no restringida. Antes de evaluar los modelos candidatos, ML ajusta el modelo inicial, se hace de la siguiente forma
 </div>
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
