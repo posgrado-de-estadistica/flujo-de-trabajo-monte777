@@ -1,0 +1,39 @@
+---
+title: "Untitled"
+mainfont: DejaVu Sans
+output:
+  html_document: default
+  pdf_document:
+    latex_engine: xelatex
+  word_document: default
+font-family: Times New Roman
+---
+
+# Getting ready for fonts
+
+Notice that the yaml at the beginning of this file includes a latex_engine which will be used 
+when creating a pdf document.
+
+It also includes a mainfont setting called _DejaVu Sans_.  This is not the only font that will 
+work to produce the spark graphs. However, it is a free font available through the
+`extrafont` package.  If you have not installed extrafont you should do so using the normal
+package installation procedures. You should then make sure that the desired font is installed.
+
+The code below will not run automatically when you knit, instead you should run it in the
+console. 
+
+```
+install.packages(c("extrafont"))
+font_install("DejaVu Sans")
+```
+
+If there are any difficulties please read the extrafont documentation.
+
+ 
+```{r, message=FALSE}
+library(pander)
+library(knitr)
+library(skimr)
+
+```
+
