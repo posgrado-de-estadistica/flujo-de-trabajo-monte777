@@ -44,11 +44,20 @@ library(leaflet)
 
 ## Motivación para el uso de análisis espacial 
 
+Probablemente el argumento más importante para adoptar un enfoque espacial es que el supuesto de independencia entre observaciones ya no es válido. Atributos de observación i puede influir en los atributos de observación j.
+
+Para ilustrar un conjunto muy pequeño de lo que se puede lograr en R para el análisis espacial, nuestro ejemplo corriente examinará crímenes violentos y
+ejecuciones hipotecarias en la ciudad de Chicago. Los datos de delitos, así como los archivos de formas de los tractos utilizados aquí provienen del Portal de Datos de Chicago, mientras que los datos de ejecuciones hipotecarias provienen del Departamento de Vivienda y Desarrollo Urbano de los EE. UU. (HUD), todos estos están disponibles al público.
+
 Probably the most important argument for taking a spatial approach is that the independence assumption between observation is no longer valid. Attributes of observation i may influence the attributes of observation j.
 
 To illustrate a very small set of what can be achieved in R for spatial analysis our running example will be examining violent crimes and foreclosures in the City of Chicago. The crime data as well as tracts shapefiles used here comes from Chicago Data Portal while foreclosures data come from the U.S. Department of Housing and Urban Development (HUD), all of these are public available.
 
 ## 3.2 R packages for spatial data analysis.
+
+En R, la unidad fundamental del código que se puede compartir es el paquete. Un paquete agrupa código, datos, documentación y pruebas, y es fácil de compartir con otros. A abril de 2016, había más de 8,200 paquetes disponibles en la Red Integral de Archivos R, o CRAN, la cámara de compensación pública para paquetes R. Esta gran variedad de paquetes es una de las razones por las que R tiene tanto éxito: lo más probable es que alguien ya haya resuelto un problema en el que estás trabajando, y puedes beneficiarte de su trabajo descargando su paquete. (Wickham (2015))
+
+Hoy nos centraremos en tres paquetes maptools (R. Bivand y Lewin Koh (2016)), spdep (R. Bivand y Piras (2015), R. Bivand, Hauke y Kossowski (2013)) y folleto (Cheng y Xie (2015)) y use un cuarto, el paquete RColorBrewer (Neuwirth (2014)) para hacer nuestras parcelas más atractivas. Para instalar los paquetes, simplemente tenemos que escribir
 
 In R, the fundamental unit of shareable code is the package. A package bundles together code, data, documentation, and tests, and is easy to share with others. As of April 2016, there were over 8,200 packages available on the Comprehensive R Archive Network, or CRAN, the public clearing house for R packages. This huge variety of packages is one of the reasons that R is so successful: the chances are that someone has already solved a problem that you’re working on, and you can benefit from their work by downloading their package. (Wickham (2015))
 
@@ -56,6 +65,28 @@ Today we’ll focus on three packages maptools (R. Bivand and Lewin-Koh (2016)),
 
 
 ## 3.3 Reading and Mapping spatial data in R
+
+Los datos espaciales vienen en muchas "formas" y "tamaños", los tipos más comunes de datos espaciales son:
+
+Los puntos son la forma más básica de datos espaciales. Denota una ubicación de un solo punto, como ciudades, una lectura de GPS o cualquier otro objeto discreto definido en el espacio.
+
+Las líneas son un conjunto de puntos ordenados, conectados por segmentos de línea recta. Los polígonos denotan un área, y pueden pensarse como una secuencia de puntos conectados, donde el primer punto es el mismo que la última Cuadrícula (Ráster) es una colección de puntos o rectangular células, organizadas en una red regular
+
+Para más detalles, ver R. S. Bivand, Pebesma y Gomez-Rubio (2008). Hoy nos centraremos en los polígonos. Los datos espaciales generalmente vienen en forma de archivo. Este tipo de archivos almacena información de geometría y atributos no topológicos para las características espaciales en un conjunto de datos.
+
+Además, no requieren mucho espacio en disco y son fáciles de leer y escribir. (ESRI (1998))
+
+Primero tenemos que descargar y guardar los archivos en nuestra computadora desde nuestro servidor en http://www.econ.uiuc.edu/~lab/workshop/foreclosures/. Guardé el mío en mi escritorio. Hemos descargado 3 archivos:
+
++ Archivo principal: foreclosures.shp
++ Archivo de índice: foreclosures.shx
++ Tabla + dBASE: ejecuciones hipotecarias.dbf
+
+El archivo principal describe una forma con una lista de sus vértices. En el archivo de índice, cada registro contiene el desplazamiento del registro del archivo principal correspondiente desde el comienzo del archivo principal. La tabla dBASE contiene atributos de características con un registro por característica. (ESRI (1998))
+
+Para leer datos de un archivo de forma de polígono en R, utilizamos la función readShapePoly que creará un objeto SpatialPolygonsDataFrame. Para obtener más información sobre la función, el comando? ReadShapePoly le dará acceso al archivo de ayuda.
+
+Pero antes de leer en el shapefile primero configuramos nuestro directorio de trabajo. R siempre apunta a un directorio en su computadora, para encontrar cuál usa getwd () (obtener el directorio de trabajo). Para especificar un directorio de trabajo:
 
 Spatial data comes in many “shapes” and “sizes”, the most common types of spatial data are:
 
@@ -82,17 +113,26 @@ But before reading in the shapefile we first set our working directory. R is alw
 setwd('~/Desktop/foreclosures')
 ```
 
+En Windows puede que tenga que usar \. La carpeta de ejecuciones hipotecarias contiene los archivos de forma que descargué antes. Ahora estamos listos para leer en nuestro shapefile.
+
 On windows you may have to use \. The foreclosures folder contain the shapefiles that I downloaded before. Now we are ready to read in our shapefile.
 
 ```{r}
 chi.poly <- readShapePoly('foreclosures.shp')
 ```
 
+el archivo de forma ahora se lee y se almacena en un objeto llamado chi.poly. Para verificar que es un SpatialPolygonsDataFrame, podemos usar la clase de función
+
 the shapefile is now read and stored in an object called chi.poly. To check that it is a SpatialPolygonsDataFrame we can use the function class
 
 ```{r}
 class
 ```
+
+
+Un objeto SpatialPolygonsDataFrame reúne las representaciones espaciales de los polígonos con datos. Las etiquetas de identificación de los polígonos en la ranura coinciden con los nombres de fila del marco de datos para asegurarse de que las filas de datos correctas estén asociadas con el objeto espacial correcto. (R. S. Bivand, Pebesma y Gómez-Rubio (2008))
+
+Este objeto tiene cuatro "partes" o ranuras: la primera es la ranura de datos que contiene las variables que se utilizarán para nuestro análisis; el segundo es la ranura del polígono y contiene la información de "forma". El tercer espacio, bbox, es el cuadro delimitador dibujado alrededor de los límites y el cuarto espacio es la cadena proj4 que contiene las proyecciones. Para acceder a la ranura de datos podemos usar la función de ranura o el símbolo @. Para una apariencia compacta de la ranura de datos, podemos usar la función str:
 
 A SpatialPolygonsDataFrame objects brings together the spatial representations of the polygons with data. The identifying tags of the polygons in the slot are matched with the row names of the data frame to make sure that the correct data rows are associated with the correct spatial object. (R. S. Bivand, Pebesma, and Gomez-Rubio (2008))
 
@@ -102,6 +142,19 @@ This object has four “parts” or slots: the first one is the data slot that c
 ```{r}
 str(slot(chi.poly,"data"))
 ```
+
+La primera parte es la parte data.frame que contiene los datos para nuestro análisis. Podemos ver las variables contenidas en la porción de datos del archivo, incluyendo:
+
++ est_fcs: el recuento estimado de ejecuciones hipotecarias comienza desde enero de 2007 hasta junio de 2008
++ est_mtgs: número estimado de hipotecas activas desde enero de 2007 hasta junio de 2008
++ est_fcs_rt: número de ejecuciones hipotecarias iniciadas dividido por número de hipotecas multiplicado por 100
++ bls_unemp: lugar de junio de 2008 o tasa de desempleo del condado
++ totpop: población total del Censo 2000
++ violento: número de delitos violentos denunciados entre enero de 2007 y diciembre de 2008
++ propiedad: número de delitos contra la propiedad denunciados entre enero de 2007 y diciembre de 2008
+
+También podemos obtener estadísticas resumidas de las variables de interés utilizando el resumen de funciones. Por ejemplo,
+
 
 The first part is the data.frame part that contains the data for our analysis. We can see the variables contained in the data portion of the file including:
 
@@ -120,6 +173,11 @@ summary(chi.poly@data$violent)
 ```
 
 
+Aquí accedimos a la porción de datos del archivo de forma con el signo @ y luego a la variable con el signo $. Para ver las otras ranuras, podemos proceder de la misma manera.
+
+Una buena característica de la clase de objetos espaciales es que podemos usar las características de trazado tradicionales de R. El siguiente comando nos proporciona un diagrama de las secciones censales de Chicago:
+
+
 Here we accessed the data portion of the shapefile with the @ sign and then the variable with the $ sign. To see the other slots, we can proceed in the same fashion.
 
 A nice feature of the class of spatial objects is that we can use the traditional plotting features of R. The following command give’s us a plot of Chicago’s Census Tracts:
@@ -127,6 +185,8 @@ A nice feature of the class of spatial objects is that we can use the traditiona
 ```{r}
 plot(chi.poly)
 ```
+
+pero podemos ir un paso más allá y hacer mejores parcelas usando el paquete de folleto. Esto genera un mapa interactivo que se puede representar en páginas HTML.
 
 but we can go a step further and make nicer plots using the leaflet package. This generates an interactive map that can be rendered on HTML pages.
 
@@ -137,7 +197,7 @@ leaflet(chi.poly) %>%
   addTiles() #adds a map tile, the default is OpenStreetMap
 ```
 
-we can add color using the package RColorBrewer
+Podemos agredar color usando el paquete RColorBrewer
 
 ```{r}
 qpal<-colorQuantile("OrRd", chi.poly@data$violent, n=9) 
@@ -148,29 +208,35 @@ leaflet(chi.poly) %>%
   addTiles()
 ```
 
+función colorQuantile del paquete de folleto mapea los valores de los datos a colores siguiendo una paleta. En este caso, he especificado una paleta de Naranjas y Rojos, para más paletas puede acceder al archivo de ayuda de RColorBrewer:? RColorBrewer.
+
 The colorQuantile function of the leaflet package maps values of the data to colors following a palette. In this case I’ve specified a palette of Oranges and Reds, for more palettes you can access the help file for RColorBrewer: ?RColorBrewer.
 
-# 4 Spatial Econometrics in R
+# 4 Econometría espacial en R
 
 When dealing with space one must bear in mind Tobler’s first law of geography “Everything is related to everything else, but close things are more related than things that are far apart”(Tobler (1979)). In this section we’ll focus on the specification of spatial dependence, on specification tests to detect spatial dependence in regressions models and on basic regression models that incorporate spatial dependence. We’ll illustrate this using the data in the shapefile loaded in the previous section.
 
-## 4.1 OLS
+## Mínimos cuadrado ordinales (OLS)
 
-The traditional approach for many years has been to ignore the spatial dependence of the data and just run an OLS regression.
+El enfoque tradicional durante muchos años ha sido ignorar la dependencia espacial de los datos y simplemente ejecutar una regresión OLS.
 
  $y=Xβ+ϵ$
 
-In R this is achieved with the lm function. For example,
+En R esto se logra con la función $lm$, por ejemplo:
 
 ```{r}
 chi.ols<-lm(violent~est_fcs_rt+bls_unemp, data=chi.poly@data)
 ```
+
+He especificado el "modelo" como $ violento ~ est_fcs_rt + bls_unemp $ donde violento es la variable dependiente y, est_fcs_rt y bls_unemp son la variable explicativa. También he especificado el conjunto de datos que son los datos de la ranura de nuestro archivo de forma. Tenga en cuenta que para acceder a este espacio utilizo el símbolo @. Esta línea no devuelve nada porque hemos creado un objeto lm que llamé chi.ols. Para ver los resultados, utilizamos la función de resumen
 
 I’ve specified the “model” as $violent~est_fcs_rt+bls_unemp$ where violent is the dependent variable and, est_fcs_rt and bls_unemp are the explanatory variable. I’ve also specified the data set which is the slot data of our shapefile. Note that to access this slot I use the @ symbol. This line does not return anything because we have created an lm object that I called chi.ols. To see the results, we use the summary function
 
 ```{r}
 summary(chi.ols)
 ```
+
+El problema de ignorar la estructura espacial de los datos implica que las estimaciones de OLS en el modelo no espacial pueden ser sesgadas, inconsistentes o ineficientes, dependiendo de cuál sea la verdadera dependencia subyacente (para más información, ver Anselin y Bera (1998)).
 
 The problem with ignoring the spatial structure of the data implies that the OLS estimates in the non spatial model may be biased, inconsistent or inefficient, depending on what is the true underlying dependence (for more see Anselin and Bera (1998)).
 
