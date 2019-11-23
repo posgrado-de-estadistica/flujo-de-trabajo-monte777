@@ -10,6 +10,10 @@ library(maptools)
 library(spdep)
 library(leaflet)
 library(RColorBrewer)
+library(pander)
+library(knitr)
+library(skimr)
+library(leaflet)
 ```
 
 
@@ -32,39 +36,21 @@ Existen muchos software externos que hacen el análisis de datos bonitos y parec
 Todas estas características más el hecho de que los investigadores en la frontera de la profesión usan R como parte de su investigación hace de R una gran herramienta para el análisis de datos espaciales.
 
 
-```{r, message=FALSE}
-library(pander)
-library(knitr)
-library(skimr)
-library(leaflet)
-```
-
-
 # Introducción al análisis espacial en R
 
-## Motivación para el uso de análisis espacial 
+## 3.1 Motivación para el uso de análisis espacial 
 
-Probablemente el argumento más importante para adoptar un enfoque espacial es que el supuesto de independencia entre observaciones ya no es válido. Atributos de observación i puede influir en los atributos de observación j.
+Probablemente el argumento más importante a tomar en un enfoque espacial es el supuesto de independencia entre observaciones ya no es válido. Atributos de observación $i$ pueden influir en los atributos de observación $j$.
 
-Para ilustrar un conjunto muy pequeño de lo que se puede lograr en R para el análisis espacial, nuestro ejemplo corriente examinará crímenes violentos y
-ejecuciones hipotecarias en la ciudad de Chicago. Los datos de delitos, así como los archivos de formas de los tractos utilizados aquí provienen del Portal de Datos de Chicago, mientras que los datos de ejecuciones hipotecarias provienen del Departamento de Vivienda y Desarrollo Urbano de los EE. UU. (HUD), todos estos están disponibles al público.
+Para ilustrar un conjunto de datos muy pequeño de lo que se puede lograr en R para el análisis espacial, nuestro ejemplo examinará crímenes violentas y ejecuciones hipotecarias en la ciudad de Chicago. Los datos de delitos, así como tractos de los archivos shapefile usados aquí provienen del Portal de Datos de Chicago, mientras que los datos de ejecuciones hipotecarias provienen del Departamento de Vivienda y Desarrollo Urbano de los EE.UU (HUD), estos están disponibles al público.
 
-Probably the most important argument for taking a spatial approach is that the independence assumption between observation is no longer valid. Attributes of observation i may influence the attributes of observation j.
+## 3.2 Paquetes de R para el análisis de datos espaciales.
 
-To illustrate a very small set of what can be achieved in R for spatial analysis our running example will be examining violent crimes and foreclosures in the City of Chicago. The crime data as well as tracts shapefiles used here comes from Chicago Data Portal while foreclosures data come from the U.S. Department of Housing and Urban Development (HUD), all of these are public available.
+En R, la unidad fundamental de compartie código es el paquete (package). Un paquete agrupa código, datos, documentación, pruebas y es fácil de compartir con otros. A partir de abril de 2016, había más de 8,200 paquetes disponibles en la Red de Archivos R, conocida como **CRAN**, la repositorio público  para paquetes R. Esta gran variedad de paquetes es una de las razones por las que R tiene tanto éxito: lo más probable es que alguien ya haya resuelto un problema en el que estás trabajando, y puedes beneficiarte de su trabajo descargando su paquete. (Wickham (2015))
 
-## 3.2 R packages for spatial data analysis.
+Hoy nos enfocamos en tres paquetes **maptools** (R. Bivand y Lewin Koh (2016)), **spdep** (R. Bivand y Piras (2015), R. Bivand, Hauke y Kossowski (2013)) y **leaflet** (Cheng y Xie (2015)) y un cuarto, el paquete **RColorBrewer** (Neuwirth (2014)) para hacer nuestros gráficos más atractivas. 
 
-En R, la unidad fundamental del código que se puede compartir es el paquete. Un paquete agrupa código, datos, documentación y pruebas, y es fácil de compartir con otros. A abril de 2016, había más de 8,200 paquetes disponibles en la Red Integral de Archivos R, o CRAN, la cámara de compensación pública para paquetes R. Esta gran variedad de paquetes es una de las razones por las que R tiene tanto éxito: lo más probable es que alguien ya haya resuelto un problema en el que estás trabajando, y puedes beneficiarte de su trabajo descargando su paquete. (Wickham (2015))
-
-Hoy nos centraremos en tres paquetes maptools (R. Bivand y Lewin Koh (2016)), spdep (R. Bivand y Piras (2015), R. Bivand, Hauke y Kossowski (2013)) y folleto (Cheng y Xie (2015)) y use un cuarto, el paquete RColorBrewer (Neuwirth (2014)) para hacer nuestras parcelas más atractivas. Para instalar los paquetes, simplemente tenemos que escribir
-
-In R, the fundamental unit of shareable code is the package. A package bundles together code, data, documentation, and tests, and is easy to share with others. As of April 2016, there were over 8,200 packages available on the Comprehensive R Archive Network, or CRAN, the public clearing house for R packages. This huge variety of packages is one of the reasons that R is so successful: the chances are that someone has already solved a problem that you’re working on, and you can benefit from their work by downloading their package. (Wickham (2015))
-
-Today we’ll focus on three packages maptools (R. Bivand and Lewin-Koh (2016)), spdep (R. Bivand and Piras (2015), R. Bivand, Hauke, and Kossowski (2013)) and leaflet (Cheng and Xie (2015)) and use a fourth one, the RColorBrewer package (Neuwirth (2014)) to make our plots more attractive. To install the packages, we simple have to type
-
-
-## 3.3 Reading and Mapping spatial data in R
+## 3.3 Leyendo y Gráficando datos espaciales en R.
 
 Los datos espaciales vienen en muchas "formas" y "tamaños", los tipos más comunes de datos espaciales son:
 
@@ -76,59 +62,30 @@ Para más detalles, ver R. S. Bivand, Pebesma y Gomez-Rubio (2008). Hoy nos cent
 
 Además, no requieren mucho espacio en disco y son fáciles de leer y escribir. (ESRI (1998))
 
-Primero tenemos que descargar y guardar los archivos en nuestra computadora desde nuestro servidor en http://www.econ.uiuc.edu/~lab/workshop/foreclosures/. Guardé el mío en mi escritorio. Hemos descargado 3 archivos:
+Primero tenemos que descargar y guardar los archivos en nuestra computadora desde nuestro servidor en [Ejecuciones Hipotecarias] (http://www.econ.uiuc.edu/~lab/workshop/foreclosures/). Guardé en Mi Escritorio.
 
-+ Archivo principal: foreclosures.shp
-+ Archivo de índice: foreclosures.shx
-+ Tabla + dBASE: ejecuciones hipotecarias.dbf
++ **Archivo principal:** foreclosures.shp
++ **Archivo de índice:** foreclosures.shx
++ **Tabla + dBASE:** ejecuciones hipotecarias.dbf
 
 El archivo principal describe una forma con una lista de sus vértices. En el archivo de índice, cada registro contiene el desplazamiento del registro del archivo principal correspondiente desde el comienzo del archivo principal. La tabla dBASE contiene atributos de características con un registro por característica. (ESRI (1998))
 
 Para leer datos de un archivo de forma de polígono en R, utilizamos la función readShapePoly que creará un objeto SpatialPolygonsDataFrame. Para obtener más información sobre la función, el comando? ReadShapePoly le dará acceso al archivo de ayuda.
 
-Pero antes de leer en el shapefile primero configuramos nuestro directorio de trabajo. R siempre apunta a un directorio en su computadora, para encontrar cuál usa getwd () (obtener el directorio de trabajo). Para especificar un directorio de trabajo:
+Pero antes de leer en el shapefile primero configuramos nuestro directorio de trabajo. R siempre apunta a un directorio en su computadora, para encontrar cuál usa getwd () (obtener el directorio de trabajo).
 
-Spatial data comes in many “shapes” and “sizes”, the most common types of spatial data are:
-
-Points are the most basic form of spatial data. Denotes a single point location, such as cities, a GPS reading or any other discrete object defined in space.
-Lines are a set of ordered points, connected by straight line segments Polygons denote an area, and can be thought as a sequence of connected points, where the first point is the same as the last Grid (Raster) are a collection of points or rectangular cells, organized in a regular lattice
-
-For more details, see R. S. Bivand, Pebesma, and Gomez-Rubio (2008). Today we’ll focus on Polygons. Spatial data usually comes in shapefile. This type of files stores non topological geometry and attribute information for the spatial features in a data set. 
-
-Moreover, they don’t require a lot of disk space and are easy to read and write. (ESRI (1998))
-
-First we have to download and save the files in our computer from our server at http://www.econ.uiuc.edu/~lab/workshop/foreclosures/. I saved mine in my desktop. We’ve downloaded 3 files:
-
-+ Main file: foreclosures.shp
-+ Index file: foreclosures.shx
-+ dBASE table: foreclosures.dbf
-
-The main file describes a shape with a list of its vertices. In the index file, each record contains the offset of the corresponding main file record from the beginning of the main file. The dBASE table contains feature attributes with one record per feature. (ESRI (1998))
-
-To read data from a polygon shapefile into R we use the function readShapePoly that will create a SpatialPolygonsDataFrame object. To learn more about the function, the command ?readShapePoly will give you access to the help file.
-
-But before reading in the shapefile we first set our working directory. R is always pointing to a directory on your computer, to find which one use getwd() (get working directory). To specify a working directory:
-
-```{r}
-setwd('~/Desktop/foreclosures')
-```
 
 En Windows puede que tenga que usar \. La carpeta de ejecuciones hipotecarias contiene los archivos de forma que descargué antes. Ahora estamos listos para leer en nuestro shapefile.
 
-On windows you may have to use \. The foreclosures folder contain the shapefiles that I downloaded before. Now we are ready to read in our shapefile.
-
-```{r}
+```{r, error=FALSE, warning=FALSE, include=FALSE}
 chi.poly <- readShapePoly('foreclosures.shp')
 ```
 
-el archivo de forma ahora se lee y se almacena en un objeto llamado chi.poly. Para verificar que es un SpatialPolygonsDataFrame, podemos usar la clase de función
-
-the shapefile is now read and stored in an object called chi.poly. To check that it is a SpatialPolygonsDataFrame we can use the function class
+El archivo shapefile ahora lee y almacena en un objeto llamado $chi.poly$. Para verificar que es un SpatialPolygonsDataFrame, podemos usar la función **class()**
 
 ```{r}
-class
+class(chi.poly)
 ```
-
 
 Un objeto SpatialPolygonsDataFrame reúne las representaciones espaciales de los polígonos con datos. Las etiquetas de identificación de los polígonos en la ranura coinciden con los nombres de fila del marco de datos para asegurarse de que las filas de datos correctas estén asociadas con el objeto espacial correcto. (R. S. Bivand, Pebesma y Gómez-Rubio (2008))
 
