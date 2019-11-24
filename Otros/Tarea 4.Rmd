@@ -1,11 +1,17 @@
 ---
-title: "Untitled"
+title: "Tarea 4: Estadística de Áreas"
+author: "Pedro Montenegro"
+date: "23/11/2019"
 mainfont: DejaVu Sans
 output:
   html_document: default
 ---
 
-```{r}
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE)
+```
+
+```{r, include=FALSE}
 library(maptools)
 library(spdep)
 library(leaflet)
@@ -14,138 +20,178 @@ library(pander)
 library(knitr)
 library(skimr)
 library(leaflet)
+library(tidyr)
+library(broom)
+library(kableExtra)
+library(dplyr)
 ```
 
 
-# Introducción
+# 1 Introducción
 
+<div style="text-align:justify">
 El tutorial fue preparado para los estudiantes graduados en la novena cumbre de Midwest sobre economía aplicada, regional y estudios urbanos (AERUS) en Abril 23-24 de 2016 para la Universidad de Illinois en Champaign urbana.
+</div>
 
+<div style="text-align:justify">
 Estas notas ilustran el uso de r en análisis econometrico espacial. La teoría es basada en Anselin y Bera (1998) y Arbia (2014) y los aspectos prácticos son actualización de versión de Anselin (2003), con algunos adiciones en visualización espacial para datos r.
+</div>
 
+<div style="text-align:justify">
 Comentarios y sugerencias son siempre bienvenidas y se pueden enviar a srmntbr2@illinois.edu1.
+</div>
 
 
-# ¿Qué es r y por qué usalo?
+# 2 ¿Qué es r y por qué usalo?
 
-R es un software libre, código abierto, y lenguaje orientado a objetos. Libre y código abierto significa que cualquiera puede usarlo, redistribuir y cambiar el software de cualquier forma. Sin embargo, "R es un sofware libre con entorno computacional estadístico y gráficos. Esto compila y corre una amplia variedad de plataformas UNIX, windows y MacOS." (http://cran.r-project.org)
+<div style="text-align:justify">
+R es un software libre, código abierto, y lenguaje orientado a objetos. Libre y código abierto significa que cualquiera puede usarlo, redistribuir y cambiar el software de cualquier forma. Sin embargo, "R es un sofware libre con entorno computacional estadístico y gráficos. Esto compila y corre una amplia variedad de plataformas UNIX, windows y MacOS." [Aquí](http://cran.r-project.org)
+</div>
 
 
+<div style="text-align:justify">
 Existen muchos software externos que hacen el análisis de datos bonitos y parecen más fáciles que r, entonces porque debería invertir en apreder sobre R?. Existen en mi opinión al menos tres caracteristicas que R hacen que r valga la pena aprenderlo. Primero que todo, es gratis. Muchos software hoy en día son caros, pero r es gratis y siempre lo será. R también es un lenguaje, lo que significa que no solo puedes usar funciones que estén construidas en el software, sino que también puedes crear tus propias funciones  (para conocer el poder del lenguaje R puede echar un vistazo al Paquete de Regresión Cuantil del Profesor Koenker). La última razón es que R está extremadamente bien soportado. Si tiene una pregunta solamente puede buscarla en Google, publicarla en StackOverflow o usar R-blogger. Si aún no está convencido, simplemente puede escribir "por qué usar el lenguaje R" en Google y creo que los resultados hablarán por sí mismos.
+</div>
 
+<div style="text-align:justify">
 Todas estas características más el hecho de que los investigadores en la frontera de la profesión usan R como parte de su investigación hace de R una gran herramienta para el análisis de datos espaciales.
+</div>
 
-
-# Introducción al análisis espacial en R
+# 3 Introducción al análisis espacial en R
 
 ## 3.1 Motivación para el uso de análisis espacial 
 
+<div style="text-align:justify">
 Probablemente el argumento más importante a tomar en un enfoque espacial es el supuesto de independencia entre observaciones ya no es válido. Atributos de observación $i$ pueden influir en los atributos de observación $j$.
+</div>
 
+<div style="text-align:justify">
 Para ilustrar un conjunto de datos muy pequeño de lo que se puede lograr en R para el análisis espacial, nuestro ejemplo examinará crímenes violentas y ejecuciones hipotecarias en la ciudad de Chicago. Los datos de delitos, así como tractos de los archivos shapefile usados aquí provienen del Portal de Datos de Chicago, mientras que los datos de ejecuciones hipotecarias provienen del Departamento de Vivienda y Desarrollo Urbano de los EE.UU (HUD), estos están disponibles al público.
+</div>
 
 ## 3.2 Paquetes de R para el análisis de datos espaciales.
 
+<div style="text-align:justify">
 En R, la unidad fundamental de compartie código es el paquete (package). Un paquete agrupa código, datos, documentación, pruebas y es fácil de compartir con otros. A partir de abril de 2016, había más de 8,200 paquetes disponibles en la Red de Archivos R, conocida como **CRAN**, la repositorio público  para paquetes R. Esta gran variedad de paquetes es una de las razones por las que R tiene tanto éxito: lo más probable es que alguien ya haya resuelto un problema en el que estás trabajando, y puedes beneficiarte de su trabajo descargando su paquete. (Wickham (2015))
+</div>
 
+<div style="text-align:justify">
 Hoy nos enfocamos en tres paquetes **maptools** (R. Bivand y Lewin Koh (2016)), **spdep** (R. Bivand y Piras (2015), R. Bivand, Hauke y Kossowski (2013)) y **leaflet** (Cheng y Xie (2015)) y un cuarto, el paquete **RColorBrewer** (Neuwirth (2014)) para hacer nuestros gráficos más atractivas. 
+</div>
 
 ## 3.3 Leyendo y Gráficando datos espaciales en R.
 
+<div style="text-align:justify">
 Los datos espaciales vienen en muchas "formas" y "tamaños", los tipos más comunes de datos espaciales son:
+</div>
 
+<div style="text-align:justify">
 Los puntos son la forma más básica de datos espaciales. Denota una ubicación de un solo punto, como ciudades, una lectura de GPS o cualquier otro objeto discreto definido en el espacio.
+</div>
 
+<div style="text-align:justify">
 Las líneas son un conjunto de puntos ordenados, conectados por segmentos de línea recta. Los polígonos denotan un área, y pueden pensarse como una secuencia de puntos conectados, donde el primer punto es el mismo que la última Cuadrícula (Ráster) es una colección de puntos o rectangular células, organizadas en una red regular
+</div>
 
+<div style="text-align:justify">
 Para más detalles, ver R. S. Bivand, Pebesma y Gomez-Rubio (2008). Hoy nos centraremos en los polígonos. Los datos espaciales generalmente vienen en forma de archivo. Este tipo de archivos almacena información de geometría y atributos no topológicos para las características espaciales en un conjunto de datos.
+</div>
 
+<div style="text-align:justify">
 Además, no requieren mucho espacio en disco y son fáciles de leer y escribir. (ESRI (1998))
+</div>
 
-Primero tenemos que descargar y guardar los archivos en nuestra computadora desde nuestro servidor en [Ejecuciones Hipotecarias] (http://www.econ.uiuc.edu/~lab/workshop/foreclosures/). Guardé en Mi Escritorio.
+<div style="text-align:justify">
+Primero tenemos que descargar y guardar los archivos en nuestra computadora desde nuestro servidor en [Ejecuciones Hipotecarias](http://www.econ.uiuc.edu/~lab/workshop/foreclosures/). Guardé en Mi Escritorio.
+</div>
 
 + **Archivo principal:** foreclosures.shp
 + **Archivo de índice:** foreclosures.shx
 + **Tabla + dBASE:** ejecuciones hipotecarias.dbf
 
+<div style="text-align:justify">
 El archivo principal describe una forma con una lista de sus vértices. En el archivo de índice, cada registro contiene el desplazamiento del registro del archivo principal correspondiente desde el comienzo del archivo principal. La tabla dBASE contiene atributos de características con un registro por característica. (ESRI (1998))
+</div>
 
-Para leer datos de un archivo de forma de polígono en R, utilizamos la función readShapePoly que creará un objeto SpatialPolygonsDataFrame. Para obtener más información sobre la función, el comando? ReadShapePoly le dará acceso al archivo de ayuda.
+<div style="text-align:justify">
+Para leer datos de un archivo de forma de polígono en R, utilizamos la función **readShapePoly()** que creará un objeto SpatialPolygonsDataFrame. Para obtener más información sobre la función, el comando ?ReadShapePoly le dará acceso al archivo de ayuda.
+</div>
 
-Pero antes de leer en el shapefile primero configuramos nuestro directorio de trabajo. R siempre apunta a un directorio en su computadora, para encontrar cuál usa getwd () (obtener el directorio de trabajo).
+<div style="text-align:justify">
+Pero antes de leer en el shapefile primero configuramos nuestro directorio de trabajo. R siempre apunta a un directorio en su computadora, para encontrar cuál usa **getwd()** (obtener el directorio de trabajo).
+</div>
 
-
+<div style="text-align:justify">
 En Windows puede que tenga que usar \. La carpeta de ejecuciones hipotecarias contiene los archivos de forma que descargué antes. Ahora estamos listos para leer en nuestro shapefile.
+</div>
 
-```{r, error=FALSE, warning=FALSE, include=FALSE}
+```{r}
 chi.poly <- readShapePoly('foreclosures.shp')
 ```
 
+<div style="text-align:justify">
 El archivo shapefile ahora lee y almacena en un objeto llamado $chi.poly$. Para verificar que es un SpatialPolygonsDataFrame, podemos usar la función **class()**
+</div>
 
 ```{r}
-class(chi.poly)
+tidy(class(chi.poly)) %>%
+  rename("Objeto"= "x") %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  
 ```
 
+<div style="text-align:justify">
 Un objeto SpatialPolygonsDataFrame reúne las representaciones espaciales de los polígonos con datos. Las etiquetas de identificación de los polígonos en la ranura coinciden con los nombres de fila del marco de datos para asegurarse de que las filas de datos correctas estén asociadas con el objeto espacial correcto. (R. S. Bivand, Pebesma y Gómez-Rubio (2008))
+</div>
 
-Este objeto tiene cuatro "partes" o ranuras: la primera es la ranura de datos que contiene las variables que se utilizarán para nuestro análisis; el segundo es la ranura del polígono y contiene la información de "forma". El tercer espacio, bbox, es el cuadro delimitador dibujado alrededor de los límites y el cuarto espacio es la cadena proj4 que contiene las proyecciones. Para acceder a la ranura de datos podemos usar la función de ranura o el símbolo @. Para una apariencia compacta de la ranura de datos, podemos usar la función str:
-
-A SpatialPolygonsDataFrame objects brings together the spatial representations of the polygons with data. The identifying tags of the polygons in the slot are matched with the row names of the data frame to make sure that the correct data rows are associated with the correct spatial object. (R. S. Bivand, Pebesma, and Gomez-Rubio (2008))
-
-This object has four “parts” or slots: the first one is the data slot that contains the variables that will be used for our analysis; the second one is the polygon slot and contains the “shape” information. The third slot, bbox, is the bounding box drawn around the boundaries and the fourth slot is the proj4string which contains the projections. To access the data slot we can use the slot function or the @ symbol. For a compact look of the data slot we can use the str function:
-
+<div style="text-align:justify">
+Este objeto tiene cuatro partes o ranuras: la primera es la ranura de datos que contiene las variables que se utilizarán para nuestro análisis; el segundo es la ranura del polígono y contiene la información shapefile. El tercer espacio, bbox, es el cuadro delimitador dibujado alrededor de los límites y el cuarto espacio es la cadena proj4 que contiene las proyecciones. Para acceder a la ranura de datos podemos usar la función de ranura o el símbolo @. Para una apariencia compacta de la ranura de datos, podemos usar la función str:
+</div>
 
 ```{r}
 str(slot(chi.poly,"data"))
 ```
 
-La primera parte es la parte data.frame que contiene los datos para nuestro análisis. Podemos ver las variables contenidas en la porción de datos del archivo, incluyendo:
+<div style="text-align:justify">
+La primera parte es la parte marco de datos que contiene los datos para nuestro análisis. Podemos ver las variables contenidas en la porción de datos del archivo, incluyendo:
+</div>
 
-+ est_fcs: el recuento estimado de ejecuciones hipotecarias comienza desde enero de 2007 hasta junio de 2008
-+ est_mtgs: número estimado de hipotecas activas desde enero de 2007 hasta junio de 2008
-+ est_fcs_rt: número de ejecuciones hipotecarias iniciadas dividido por número de hipotecas multiplicado por 100
-+ bls_unemp: lugar de junio de 2008 o tasa de desempleo del condado
-+ totpop: población total del Censo 2000
-+ violento: número de delitos violentos denunciados entre enero de 2007 y diciembre de 2008
-+ propiedad: número de delitos contra la propiedad denunciados entre enero de 2007 y diciembre de 2008
++ **est_fcs:** el recuento estimado de ejecuciones hipotecarias comienza desde enero de 2007 hasta junio de 2008
++ **est_mtgs:** número estimado de hipotecas activas desde enero de 2007 hasta junio de 2008
++ **est_fcs_rt:** número de ejecuciones hipotecarias iniciadas dividido por número de hipotecas multiplicado por 100
++ **bls_unemp:** lugar de junio de 2008 o tasa de desempleo del condado
++ **totpop:** población total del Censo 2000
++ **violento:** número de delitos violentos denunciados entre enero de 2007 y diciembre de 2008
++ **propiedad:** número de delitos contra la propiedad denunciados entre enero de 2007 y diciembre de 2008
 
-También podemos obtener estadísticas resumidas de las variables de interés utilizando el resumen de funciones. Por ejemplo,
-
-
-The first part is the data.frame part that contains the data for our analysis. We can see the variables contained in the data portion of the file including:
-
-+ est_fcs: estimated count of foreclosure starts from Jan. 2007 through June 2008
-+ est_mtgs: estimated number of active mortgages from Jan. 2007 through June 2008
-+ est_fcs_rt: number of foreclosure starts divided by number of mortgages times 100
-+ bls_unemp: June 2008 place or county unemployment rate
-+ totpop: total population from 2000 Census
-+ violent: number of violent crimes reported between Jan. 2007 through December 2008
-+ property: number of property crimes reported between Jan. 2007 through December 2008
-
-We can also get summary statistics of the variables of interest using the function summary. For example,
+<div style="text-align:justify">
+También podemos obtener estadísticas resumen de las variables de interés utilizando el resumen de funciones. Por ejemplo:
+</div>
 
 ```{r}
-summary(chi.poly@data$violent)
+tidy(summary(chi.poly@data$violent)) %>%
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Estadísticas Resumen" = 6))
 ```
 
 
-Aquí accedimos a la porción de datos del archivo de forma con el signo @ y luego a la variable con el signo $. Para ver las otras ranuras, podemos proceder de la misma manera.
+<div style="text-align:justify">
+Aquí accedimos a la porción de datos del shapefile con el signo @ y luego a la variable con el signo $. Para ver las otras ranuras, podemos proceder de la misma manera.
+</div>
 
-Una buena característica de la clase de objetos espaciales es que podemos usar las características de trazado tradicionales de R. El siguiente comando nos proporciona un diagrama de las secciones censales de Chicago:
+<div style="text-align:justify">
+Una buena característica de la clase de objetos espaciales es que podemos usar las características de gráficos tradicionales de R. El siguiente comando nos proporciona un gráfico de las secciones censales de Chicago:
+</div>
 
-
-Here we accessed the data portion of the shapefile with the @ sign and then the variable with the $ sign. To see the other slots, we can proceed in the same fashion.
-
-A nice feature of the class of spatial objects is that we can use the traditional plotting features of R. The following command give’s us a plot of Chicago’s Census Tracts:
 
 ```{r}
-plot(chi.poly)
+plot(chi.poly,main="Secciones censales de Chicago")
 ```
 
+<div style="text-align:justify">
 pero podemos ir un paso más allá y hacer mejores parcelas usando el paquete de folleto. Esto genera un mapa interactivo que se puede representar en páginas HTML.
-
-but we can go a step further and make nicer plots using the leaflet package. This generates an interactive map that can be rendered on HTML pages.
+</div>
 
 
 ```{r}
@@ -154,7 +200,9 @@ leaflet(chi.poly) %>%
   addTiles() #adds a map tile, the default is OpenStreetMap
 ```
 
+<div style="text-align:justify">
 Podemos agredar color usando el paquete RColorBrewer
+</div>
 
 ```{r}
 qpal<-colorQuantile("OrRd", chi.poly@data$violent, n=9) 
@@ -165,59 +213,86 @@ leaflet(chi.poly) %>%
   addTiles()
 ```
 
-función colorQuantile del paquete de folleto mapea los valores de los datos a colores siguiendo una paleta. En este caso, he especificado una paleta de Naranjas y Rojos, para más paletas puede acceder al archivo de ayuda de RColorBrewer:? RColorBrewer.
-
-The colorQuantile function of the leaflet package maps values of the data to colors following a palette. In this case I’ve specified a palette of Oranges and Reds, for more palettes you can access the help file for RColorBrewer: ?RColorBrewer.
+<div style="text-align:justify">
+La función colorQuantile del paquete **leaflet** mapea los valores de los datos a colores siguiendo una paleta. En este caso, he especificado una paleta de Naranjas y Rojos, para más paletas puede acceder al archivo de ayuda de RColorBrewer:? **RColorBrewer**.
+</div>
 
 # 4 Econometría espacial en R
 
-When dealing with space one must bear in mind Tobler’s first law of geography “Everything is related to everything else, but close things are more related than things that are far apart”(Tobler (1979)). In this section we’ll focus on the specification of spatial dependence, on specification tests to detect spatial dependence in regressions models and on basic regression models that incorporate spatial dependence. We’ll illustrate this using the data in the shapefile loaded in the previous section.
+<div style="text-align:justify">
+Cuando se trata del espacio, uno debe tener en cuenta la primera ley de geografía de Tobler "Todo está relacionado con todo lo demás, pero las cosas cercanas están más relacionadas que las que están muy separadas" (Tobler (1979)). 
+</div>
 
-## Mínimos cuadrado ordinales (OLS)
+<div style="text-align:justify">
+En esta sección nos centraremos en la especificación de la dependencia espacial, en las pruebas de especificación para detectar la dependencia espacial en los modelos de regresión y en los modelos de regresión básicos que incorporan la dependencia espacial. Ilustraremos esto utilizando los datos en el archivo de forma cargado en la sección anterior.
+</div>
 
+## Mínimos cuadrados ordinales (OLS)
+
+<div style="text-align:justify">
 El enfoque tradicional durante muchos años ha sido ignorar la dependencia espacial de los datos y simplemente ejecutar una regresión OLS.
+</div>
 
  $y=Xβ+ϵ$
 
+<div style="text-align:justify">
 En R esto se logra con la función $lm$, por ejemplo:
+</div>
 
-```{r}
+```{r, echo=TRUE}
 chi.ols<-lm(violent~est_fcs_rt+bls_unemp, data=chi.poly@data)
 ```
 
-He especificado el "modelo" como $ violento ~ est_fcs_rt + bls_unemp $ donde violento es la variable dependiente y, est_fcs_rt y bls_unemp son la variable explicativa. También he especificado el conjunto de datos que son los datos de la ranura de nuestro archivo de forma. Tenga en cuenta que para acceder a este espacio utilizo el símbolo @. Esta línea no devuelve nada porque hemos creado un objeto lm que llamé chi.ols. Para ver los resultados, utilizamos la función de resumen
-
-I’ve specified the “model” as $violent~est_fcs_rt+bls_unemp$ where violent is the dependent variable and, est_fcs_rt and bls_unemp are the explanatory variable. I’ve also specified the data set which is the slot data of our shapefile. Note that to access this slot I use the @ symbol. This line does not return anything because we have created an lm object that I called chi.ols. To see the results, we use the summary function
+<div style="text-align:justify">
+He especificado el "modelo" como $violento$ ~ est_fcs_rt + bls_unemp  donde la variable dependiente es violento, **est_fcs_rt** y **bls_unemp** son las variables explicativas. También he especificado el conjunto de datos que son los datos de la ranura de nuestro archivo shapefile. Tenga en cuenta que para acceder a este espacio utilizo el símbolo @. Esta línea no devuelve nada porque hemos creado un objeto lm que llamé chi.ols. Para ver los resultados, utilizamos la función de **summary()**.
+</div>
 
 ```{r}
-summary(chi.ols)
+summary(chi.ols) %>% tidy() %>%
+  rename("Terminos" = "term",
+         "Coeficientes"= "estimate") %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Modelo violento ~ est_fcs_rt + bls_unemp" = 5))
 ```
 
+<div style="text-align:justify">
 El problema de ignorar la estructura espacial de los datos implica que las estimaciones de OLS en el modelo no espacial pueden ser sesgadas, inconsistentes o ineficientes, dependiendo de cuál sea la verdadera dependencia subyacente (para más información, ver Anselin y Bera (1998)).
+</div>
 
-The problem with ignoring the spatial structure of the data implies that the OLS estimates in the non spatial model may be biased, inconsistent or inefficient, depending on what is the true underlying dependence (for more see Anselin and Bera (1998)).
+## 4.2 Modelado de la dependencia espacial
 
-## 4.2 Modeling Spatial Dependence
-
-We now take a closer look at spatial dependence, or to be more precise on it’s weaker expression spatial autocorrelation. Spatial autocorrelation measures the degree to which a phenomenon of interest is correlated to itself in space (Cliff and Ord (1973)). In other words, similar values appear close to each other, or cluster, in space (positive spatial autocorrelation) or neighboring values are dissimilar (negative spatial autocorrelation). Null spatial autocorrelation indicates that the spatial pattern is random. Following Anselin and Bera (1998) we can express the existence of spatial autocorrelation with the following moment condition:
+<div style="text-align:justify">
+Ahora echamos un vistazo más de cerca a la dependencia espacial, o para ser más precisos sobre su autocorrelación espacial de expresión más débil. La autocorrelación espacial mide el grado en que un fenómeno de interés se correlaciona consigo mismo en el espacio (Cliff y Ord (1973)). En otras palabras, valores similares aparecen cerca uno del otro, o agrupados, en el espacio (autocorrelación espacial positiva) o los valores vecinos son diferentes (autocorrelación espacial negativa). La autocorrelación espacial nula indica que el patrón espacial es aleatorio. Siguiendo a Anselin y Bera (1998) podemos expresar la existencia de autocorrelación espacial con la siguiente condición de momento:
+</div>
 
 $Cov(yi,yj)≠0fori≠j$
 
-were $yi$ and $yj$ are observations on a random variable at locations i and j. The problem here is that we need to estimate $N$ by $N$ covariance terms directly for $N$ observations. To overcome this problem we impose restrictions on the nature of the interactions. One type of restriction is to define for each data point a relevant “neighborhood set”. In spatial econometrics this is operationalized via the spatial weights matrix. The matrix usually denoted by $W$ is a $N$ by $N$ positive and symmetric matrix which denotes fore each observation (row) those locations (columns) that belong to its neighborhood set as nonzero elements (Anselin and Bera (1998), Arbia (2014)), the typical element is then:
+<div style="text-align:justify">
+donde $ yi $ y $ yj $ son observaciones en una variable aleatoria en las ubicaciones i y j. El problema aquí es que necesitamos estimar los términos de covarianza de $ N $ por $ N $ directamente para las observaciones de $ N $. Para superar este problema, imponemos restricciones a la naturaleza de las interacciones. Un tipo de restricción es definir para cada punto de datos un "conjunto de vecindad" relevante. En la econometría espacial, esto se operacionaliza a través de la matriz de ponderaciones espaciales. La matriz generalmente denotada por $ W $ es un $ N $ por $ N $ matriz positiva y simétrica que denota por cada observación (fila) aquellas ubicaciones (columnas) que pertenecen a su conjunto de vecindarios como elementos distintos de cero (Anselin y Bera (1998), Arbia (2014)), el elemento típico es entonces:
+</div>
 
-$[wij]={10ifj∈N(i)o.w$
+[wij]={10ifj∈N(i)o.w
 
-$N(i)$  being the set of neighbors of location j. By convention, the diagonal elements are set to zero, i.e. $wii=0$. To help with the interpretation the matrix is often row standardized such that the elements of a given row add to one.
+<div style="text-align:justify">
+$ N (i) $ es el conjunto de vecinos de la ubicación j. Por convención, los elementos diagonales se establecen en cero, es decir, $ wii = 0 $. Para ayudar con la interpretación, la matriz a menudo está estandarizada por filas, de modo que los elementos de una fila dada se suman a una.
+</div>
 
-The specification of the neighboring set is quite arbitrary and there’s a wide range of suggestions in the literature. One popular way is to use one of the two following criteria:
+<div style="text-align:justify">
+La especificación del conjunto vecino es bastante arbitraria y hay una amplia gama de sugerencias en la literatura. Una forma popular es usar uno de los dos criterios siguientes:
+</div>
 
-+ Rook criterion: two units are close to one another if they share a side
-+ Queen criterion: two units are close if they share a side or an edge.
++ Criterio de torre: dos unidades están cerca una de la otra si comparten un lado
++ Criterio reina: dos unidades están cerca si comparten un lado o una arista.
 
 
-Another used approach is to denote two observations as neighbors if they are within a certain distance, i.e., j∈N(j) if dij<dmax where d is the distance between location i and j.
+<div style="text-align:justify">
+Otro enfoque utilizado es denotar dos observaciones como vecinas si están dentro de una cierta distancia, es decir, j∈N (j) si dij <dmax donde d es la distancia entre la ubicación i y j.
+</div>
 
-Here we’ll focus on using the queen criterion and we encourage the reader to experiment with the rook criterion. In R to obtain the weights matrix we make use of two functions. In the first step we use poly2nb which builds a neighbors list, if the option queen=TRUE is specified it will be build using the queen criterion. If FALSE is specified, then the rook criteria will be used. The next step is to supplement the neighbors list with the spatial weights. The option W row standardizes the matrix.
+<div style="text-align:justify">
+Aquí nos centraremos en usar el criterio de reina y alentamos al lector a experimentar con el criterio de torre. En R para obtener la matriz de pesos, utilizamos dos funciones. En el primer paso usamos **poly2nb** que construye una lista de vecinos, si se especifica la opción queen = TRUE, se construirá utilizando el criterio queen. Si se especifica FALSO, se utilizarán los criterios de torre. El siguiente paso es complementar la lista de vecinos con los pesos espaciales. La opción fila W estandariza la matriz.
+</div>
 
 
 ```{r}
@@ -226,97 +301,173 @@ W<-nb2listw(list.queen, style="W", zero.policy=TRUE)
 W
 ```
 
-
-We can plot the link distribution with the usual plot function
+<div style="text-align:justify">
+Podemos gráficar la distribución link con la usual función **plot()**
+</div>
 
 ```{r}
-plot(W,coordinates(chi.poly))
+plot(W,coordinates(chi.poly), main= "Distribución link con pesos Reina")
 ```
 
+<div style="text-align:justify">
+Para obtener la matriz de peso basada en distancias, usamos dos funciones: coordenadas que recuperarán las coordenadas centroides de los polígonos de las segmentos censales y datos cercanos que identificarán vecinos entre dos distancias en kilómetros medidos usando la distancia euclidiana. Por ejemplo, para encontrar vecinos dentro de 1 kilómetro hacemos:
+</div>
 
-To obtain the weight matrix based on distances we use two functions: coordinates that will retrieve the centroid coordinates of the census tracts polygons and dnearneigh that will identify neighbors between two distances in kilometers measured using Euclidean distance. For example, to find neighbors within 1 kilometer we do:
 
-```{r}
+```{r, echo=TRUE}
 coords<-coordinates(chi.poly)
 W_dist<-dnearneigh(coords,0,1,longlat = FALSE)
 ```
 
-I encourage you to compare the link distributions for these three ways of defining neighbors.
+<div style="text-align:justify">
+Le animo a comparar las distribuciones de enlaces para estas tres formas de definir vecinos.
+</div>
 
-4.2.1 Spatial Autoregressive (SAR) Models
-Spatial lag dependence in a regression setting can be modeled similar to an autoregressive process in time series. Formally,
+## 4.2.1 Modelos espaciales autorregresivo (SAR) 
 
-y=ρWy+Xβ+ϵ
+<div style="text-align:justify">
+La dependencia del rezago espacial en la definición de regresión puede modelarse de manera similar a un proceso autorregresivo en series de tiempo. Formalmente,
+</div>
 
-The presence of the term Wy induces a nonzero correlation with the error term, similar to the presence of an endogenous variable, but different from the time series context. Contrarious to time series, [Wy]i is always correlated with ϵi irrespective of the structure of the errors. This implies that OLS estimates in the non spatial model will be biased and inconsistent. (Anselin and Bera (1998))
+$y=ρWy+Xβ+ϵ$
 
-4.2.2 Spatial Error Models (SEM)
-Another way to model spatial autocorrelation in a regression model is to specify the autoregressive process in the error term:
+<div style="text-align:justify">
+La presencia del término Wy induce una correlación distinta de cero con el término de error, similar a la presencia de una variable endógena, pero diferente del contexto de series de tiempo. Contrariamente a las series de tiempo, $[Wy]i$ siempre está correlacionado con $ϵi$ independientemente de la estructura de los errores. Esto implica que las estimaciones de OLS en el modelo no espacial serán sesgadas e inconsistentes. (Anselin y Bera (1998))
+</div>
 
-y=Xβ+ϵ
+## 4.2.2 Modelos errores espaciales (SEM)
 
-with
+<div style="text-align:justify">
+Otra forma de modelar la autocorrelación espacial en un modelo de regresión es especificar el proceso autorregresivo en el término de error:
+</div>
 
-ϵ=λWϵ+u
+$y=Xβ+ϵ$
 
-If this is the “true” form of spatial dependence OLS estimates will be unbiased but inefficient.
+con
 
-4.3 Testing for spatial autocorrelation
-There are multiple tests for testing the presence of spatial autocorrelation. In this note we’ll focus on a restricted set: Moran’s I test and Lagrange Multiplier tests.
+$ϵ=λWϵ+u$
 
-4.3.1 Moran’s I Test
-Moran’s I test was originally developed as a two-dimensional analog of Durbin-Watson’s test
+<div style="text-align:justify">
+Si esta es la forma "verdadera" de dependencia espacial, las estimaciones de OLS serán insesgadas pero ineficientes.
+</div>
+
+## 4.3 Pruebas de autocorrelación Espacial
+
+<div style="text-align:justify">
+Existen múltiples pruebas para probar la presencia de autocorrelación espacial. </div>
+
+<div style="text-align:justify">
+En esta nota, nos enfocamos en un conjunto restringido: la prueba de Moran I y las pruebas de multiplicador de la Lagrange.
+</div>
+
+
+## 4.3.1 Prueba I de Moran
+
+<div style="text-align:justify">
+La prueba I de Moran se desarrolló originalmente como un análogo bidimensional de la prueba de Durbin-Watson
+</div>
 
 $I=(e′Wee′e)$
 
-where e=y−Xβ is a vector of OLS residuals β=(X′X)−1X′y, W is the row standardized spatial weights matrix.(For more detail see Anselin and Bera (1998))
+<div style="text-align:justify">
+donde $e=y−Xβ$ es un vector de residuos OLS $β=(X′X)−1X′y$, W es la matriz de pesos espaciales estandarizadas de las filas. (Para más detalles ver Anselin y Bera (1998))
+</div>
 
-To perform a Moran test on our data we need two inputs, an lm regression object (estimated in the OLS section) and the spatial weight matrix
+<div style="text-align:justify">
+Para realizar una prueba de Moran en nuestros datos, necesitamos dos entradas, un objeto de regresión lm (estimado en la sección OLS) y la matriz de peso espacial
+</div>
 
 ```{r}
 moran.lm<-lm.morantest(chi.ols, W, alternative="two.sided")
-print(moran.lm)
+moran.lm %>% tidy() %>% 
+  rename("Observado_Moran"="estimate1",
+         "Expectativa"="estimate2",
+         "Varianza"="estimate3") %>%
+  dplyr::select(-method,-alternative) %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Global Moran I con regresión residuos" = 5))
 ```
 
-The computation of the statistic is relative to a given choice of the spatial weights W. Different specifications of the weights matrix will give different results. I encourage the reader to try this with the rook contiguity criterion.
+<div style="text-align:justify">
+El cálculo de la estadística es relativo a una elección dada de los pesos espaciales W. Las diferentes especificaciones de la matriz de pesos darán resultados diferentes. Animo al lector a probar esto con el criterio de torre.
+</div>
 
-##  4.3.2 Lagrange Multiplier Test
+##  4.3.2 Prueba Multiplicador de Lagrange
 
-A nice feature of Moran’s I test is that i has high power against a wide range of alternatives (Anselin and Bera (1998)). However, it does not guide us in the selection of alternative models. On the other hand, Lagrange Multiplier test specify the alternative hypothesis which will help us with the task. The LM tests for spatial dependence are included in the lm.LMtests function and include as alternatives the presence of a spatial lag and the presence of a spatial lag in the error term. Both tests, as well as their robust forms are included in the lm.LMtests function. To call them we use the option test="all". Again, a regression object and a spatial listw object must be passed as arguments:
+<div style="text-align:justify">
+Una buena característica de la prueba I de Moran es que tengo un alto poder frente a una amplia gama de alternativas (Anselin y Bera (1998)). Sin embargo, no nos guía en la selección de modelos alternativos. Por otro lado, la prueba del multiplicador de Lagrange especifica la hipótesis alternativa que nos ayudará con la tarea. Las pruebas de LM para la dependencia espacial se incluyen en la función **lm.LMtests** e incluyen como alternativas la presencia de un retraso espacial y la presencia de un retraso espacial en el término de error. Ambas pruebas, así como sus formas robustas, están incluidas en la función lm.LMtests(). Para llamarlos usamos la opción **test = "all"**. Nuevamente, un objeto de regresión y un objeto espacial listw deben pasarse como argumentos:
+</div>
+
 
 ```{r}
 LM<-lm.LMtests(chi.ols, W, test="all")
-print(LM)
+LM$LMerr %>% tidy() %>% 
+  dplyr::select(-method) %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Diagnostico de dependencia espacial LMerr" = 3))
+LM$LMlag%>% tidy() %>% 
+  dplyr::select(-method) %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Diagnostico de dependencia espacial LMlag" = 3))
+LM$RLMerr%>% tidy() %>% 
+  dplyr::select(-method) %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Diagnostico de dependencia espacial RLMerr" = 3))
+LM$RLMlag%>% tidy() %>% 
+  dplyr::select(-method) %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Diagnostico de dependencia espacial RLMlag" = 3))
+LM$SARMA%>% tidy() %>% 
+  dplyr::select(-method) %>% 
+    knitr::kable("html",format.args = list(decimal.mark = ',', big.mark = ".")) %>%
+    kableExtra::kable_styling(c("striped"), full_width = F, position = "center")  %>%  
+    kableExtra::add_header_above(c("Diagnostico de dependencia espacial SARMA" = 3))
 ```
 
-Since LMerr and LMlag are both statistically significant different from zero, we need to look at their robust counterparts. These robust counterparts are actually robust to the presence of the other “type” of autocorrelation. The robust version of the tests suggest that the lag model is the more likely alternative.
+<div style="text-align:justify">
+Dado que LMerr y LMlag son estadísticamente significativos diferentes de cero, debemos analizar sus contrapartes robustas. Estas contrapartes robustas son realmente robustas a la presencia del otro "tipo" de autocorrelación. La versión robusta de las pruebas sugiere que el rezago del modelo es la alternativa más probable.
+</div>
 
-4.4 Running Spatial Regressions
-4.4.1 SAR Models
-The estimation of the SAR model can be approached in tw
+## 4.4 Ejecución de regresiones espaciales
+
+### 4.4.1 Modelos SAR 
+
+<div style="text-align:justify">
+La estimación del modelo SAR puede abordar en:
+</div>
 
 ```{r}
 sar.chi<-lagsarlm(violent~est_fcs_rt+bls_unemp, data=chi.poly@data, W)
 summary(sar.chi)
 ```
 
-Another way is to use 2SLS using the function stsls. I leave this to the reader so he/she can compare the results to the MLE approach. The function is:
+<div style="text-align:justify">
+Otro camino es usar $2SLS$ usando la función stsls. Le dejo esto al lector para que pueda comparar los resultados con el enfoque MLE. La función es:
+</div>
 
 ```{r}
 sar2sls.chi<-stsls(violent~est_fcs_rt+bls_unemp, data=chi.poly@data, W)
 summary(sar2sls.chi)
 ```
 
-We then can compare the residuals of the OLS regression to the residuals of the spatial autoregressive model. To access the residuals for the OLS model and the SAR model we simply do
+<div style="text-align:justify">
+Luego podemos comparar los residuos de la regresión de OLS con los residuos del modelo espacial autorregresivo. Para acceder a los residuos para el modelo OLS y el modelo SAR simplemente hacemos
+</div>
 
 ```{r}
 chi.poly@data$chi.ols.res<-resid(chi.ols) #residuals ols
-
 chi.poly@data$chi.sar.res<-resid(sar.chi) #residual sar
 ```
 
+<div style="text-align:justify">
+En este paso, crearé una nueva variable en la porción de datos del archivo de shapefile que ayudará a trazar los residuos. Para trazar los residuos, uso la función spplot en el paquete **spdep**. Los argumentos son el archivo de forma, la variable que queremos trazar, el número de saltos y los colores que vamos a utilizar. Para especificar los colores, utilizamos la paleta Rojo y Azul (RdBu) del paquete RColorBrewer.
+</div>
 
-In this step I’ve create a new variable in the data portion of the shapefile that will help with the plotting of the residuals. To plot the residuals, I use the spplot function in the spdep package. The arguments are the shapefile, the variable that we want to plot, the number of breaks and the colors we are going to use. To specify the colors, we use the Red and Blues (RdBu) palette from the RColorBrewer package.
 
 ```{r}
 spplot(chi.poly,"chi.ols.res", at=seq(min(chi.poly@data$chi.ols.res,na.rm=TRUE),max(chi.poly@data$chi.ols.res,na.rm=TRUE),length=12),col.regions=rev(brewer.pal(11,"RdBu")))
@@ -326,37 +477,53 @@ spplot(chi.poly,"chi.ols.res", at=seq(min(chi.poly@data$chi.ols.res,na.rm=TRUE),
 spplot(chi.poly,"chi.sar.res",at=seq(min(chi.poly@data$chi.sar.res,na.rm=TRUE),max(chi.poly@data$chi.sar,na.rm=TRUE), length=12), col.regions=rev(brewer.pal(11,"RdBu")))
 ```
 
-## 4.4.1.1 Marginal Effects
+### 4.4.1.1 Efectos Marginales
 
-Note that the presence of the spatial weights matrix makes marginal effects richer and slightly more complicated than in the “traditional” OLS model. We’ll have three impact measures suggested by Pace and LeSage (2009) and is done in R with the function impacts
+<div style="text-align:justify">
+Tenga en cuenta que la presencia de la matriz de pesos espaciales hace que los efectos marginales sean más ricos y un poco más complicados que en el modelo OLS "tradicional". Tendremos tres medidas de impacto sugeridas por Pace y LeSage (2009) y se realiza en R con los impactos de la función
+</div>
 
 ```{r}
 impacts(sar.chi, listw=W)
 ```
 
-The direct impact refers to average total impact of a change of an independent variable on the dependent fore each observation, i.e., n−1∑ni=1∂E(yi)∂Xi, the indirect impact which is the sum of the impact produced on one single observation by all other observations and the impact of one observation on all the other. The total is the summation of the two
+<div style="text-align:justify">
+El impacto directo se refiere al impacto total promedio de un cambio de una variable independiente en el dependiente de cada observación, es decir, $ n − 1∑ni = 1∂E (yi) ∂Xi $, el impacto indirecto que es la suma de impacto producido en una sola observación por todas las demás observaciones y el impacto de una observación en todas las demás. El total es la suma de los dos.
+</div>
 
-## 4.4.2 SEM Models
 
-On the other hand, if we want to estimate the Spatial Error Model we have two approaches again. First, we can use Maximum Likelihood as before, with the function errorsarlm
+### 4.4.2 SEM Models
+
+<div style="text-align:justify">
+Por otro lado, si queremos estimar el modelo de error espacial, tenemos dos enfoques nuevamente. Primero, podemos usar la máxima verosimilitud como antes, con la función **errorsarlm**
+</div>
+
 
 ```{r}
 errorsalm.chi<-errorsarlm(violent~est_fcs_rt+bls_unemp, data=chi.poly@data, W)
 summary(errorsalm.chi)
 ```
 
-The same plot for the SEM residuals can be done as before and is left for the reader. A second approach is use Feasible Generalized Least Squares (GLS) with the function GMerrorsar. The function is:
+<div style="text-align:justify">
+El mismo gráfico para los residuos SEM se puede hacer como antes y se deja para el lector. Un segundo enfoque es utilizar mínimos cuadrados generalizados factibles (GLS) con la función GMerrorsar. La función es:
+</div>
+
 
 ```{r}
 fgls.chi<-GMerrorsar(violent~est_fcs_rt+bls_unemp, data=chi.poly@data, W)
 summary(fgls.chi)
 ```
 
-Finally, if we look at the likelihood for the SAR model and SEM model we see that we achieve a lower value for the SAR model that was the model favored by the LMtests. The residuals plot presented above still show some presence of spatial autocorrelation. It’s very likely that the a more complete model is specified. The literature has expanded to more complex models. The reader is encouraged to read Anselin and Bera (1998), Arbia (2014) and Pace and LeSage (2009) for more detailed and complete introductions on Spatial Econometrics.
+<div style="text-align:justify">
+Finalmente, si observamos la probabilidad para el modelo SAR y el modelo SEM, vemos que alcanzamos un valor más bajo para el modelo SAR que fue el modelo favorecido por LMtests. El gráfico de residuos presentado anteriormente todavía muestra cierta presencia de autocorrelación espacial. Es muy probable que se especifique un modelo más completo. La literatura se ha expandido a modelos más complejos. Se alienta al lector a leer Anselin y Bera (1998), Arbia (2014) y Pace and LeSage (2009) para obtener introducciones más detalladas y completas sobre la Econometría espacial.
+</div>
 
-References
 
-Anselin, Luc. 2003. “An Introduction to Spatial Regression Analysis in R.” Available at: Https://geodacenter.asu.edu/drupal_files/spdepintro.pdf.
+# Referencias
+
+<div style="text-align:justify">
+Anselin, Luc. 2003. “An Introduction to Spatial Regression Analysis in R.” Available at: [Aquí](Https://geodacenter.asu.edu/drupal_files/spdepintro.pdf.)
+
 
 Anselin, Luc, and Anil K Bera. 1998. “Spatial Dependence in Linear Regression Models with an Introduction to Spatial Econometrics.” Statistics Textbooks and Monographs 155. MARCEL DEKKER AG: 237–90.
 
@@ -364,22 +531,23 @@ Arbia, Giuseppe. 2014. A Primer for Spatial Econometrics: With Applications in R
 
 Bivand, Roger S, Edzer J Pebesma, and Virgilio Gomez-Rubio. 2008. Applied Spatial Data Analysis with R. Springer. Springer.
 
-Bivand, Roger, and Nicholas Lewin-Koh. 2016. Maptools: Tools for Reading and Handling Spatial Objects. https://CRAN.R-project.org/package=maptools.
+Bivand, Roger, and Nicholas Lewin-Koh. 2016. Maptools: Tools for Reading and Handling Spatial Objects. [Aquí](https://CRAN.R-project.org/package=maptools.)
 
-Bivand, Roger, and Gianfranco Piras. 2015. “Comparing Implementations of Estimation Methods for Spatial Econometrics.” Journal of Statistical Software 63 (18): 1–36. http://www.jstatsoft.org/v63/i18/.
+Bivand, Roger, and Gianfranco Piras. 2015. “Comparing Implementations of Estimation Methods for Spatial Econometrics.” Journal of Statistical Software 63 (18): 1–36. [Aquí](http://www.jstatsoft.org/v63/i18/.)
 
-Bivand, Roger, Jan Hauke, and Tomasz Kossowski. 2013. “Computing the Jacobian in Gaussian Spatial Autoregressive Models: An Illustrated Comparison of Available Methods.” Geographical Analysis 45 (2): 150–79. http://www.jstatsoft.org/v63/i18/.
+Bivand, Roger, Jan Hauke, and Tomasz Kossowski. 2013. “Computing the Jacobian in Gaussian Spatial Autoregressive Models: An Illustrated Comparison of Available Methods.” Geographical Analysis 45 (2): 150–79. [Aquí](http://www.jstatsoft.org/v63/i18/.)
 
-Cheng, Joe, and Yihui Xie. 2015. Leaflet: Create Interactive Web Maps with the JavaScript ’Leaflet’ Library. http://rstudio.github.io/leaflet/.
+Cheng, Joe, and Yihui Xie. 2015. Leaflet: Create Interactive Web Maps with the JavaScript ’Leaflet’ Library. [Aquí](http://rstudio.github.io/leaflet/.)
 
 Cliff, Andrew David, and J Keith Ord. 1973. Spatial Autocorrelation. Vol. 5. Pion London.
 
-ESRI, Environmental Systems Research Institute. 1998. “ESRI Shapefile Technical Description.” Available at: Https://www.esri.com/library/whitepapers/pdfs/shapefile.pdf.
+ESRI, Environmental Systems Research Institute. 1998. “ESRI Shapefile Technical Description.” [Disponible](Https://www.esri.com/library/whitepapers/pdfs/shapefile.pdf.)
 
-Neuwirth, Erich. 2014. RColorBrewer: ColorBrewer Palettes. https://CRAN.R-project.org/package=RColorBrewer.
+Neuwirth, Erich. 2014. RColorBrewer: ColorBrewer Palettes. [Aquí](https://CRAN.R-project.org/package=RColorBrewer.)
 
 Pace, R Kelley, and JP LeSage. 2009. “Introduction to Spatial Econometrics.” Boca Raton, FL: Chapman &Hall/CRC.
 
 Tobler, WR. 1979. “Cellular Geography.” In Philosophy in Geography, 379–86. Springer.
 
 Wickham, Hadley. 2015. R Packages. “O’Reilly Media, Inc.”
+</div>
