@@ -25,19 +25,19 @@ Modelar los efectos de la matriz de varianza y covarianza.
 
 **Introducción**
 
-Los ecologistas han reconocido por mucho tiempo que los datos exhiben patrones de prueba (Watt 1947). Estos patrones fueron a menudoexpresado como autocorrelación espacial (Sokal y Oden1978), que es la tendencia de sitios cercanos con valores más similares que los sitios que son más lejos el uno del otro. Cuando autocorrelación espacial existe en los datos, los ecologistas a menudo usan modelos estadísticos espaciales porque la suposición de errores independientes no se cumplen.
+Los ecologistas han reconocido por mucho tiempo que los datos exhiben patrones de prueba (Watt 1947). Estos patrones fueron a menudo expresado como autocorrelación espacial (Sokal y Oden1978), que es la tendencia de sitios cercanos con valores más similares que los sitios que son más lejos el uno del otro. Cuando autocorrelación espacial existe en los datos, los ecologistas a menudo usan modelos estadísticos espaciales porque la suposición de errores independientes no se cumplen.
 
 Los datos de área son un tipo de datos ecológicos espaciales que implican polígonos o datos de área de referencia con medidas en los poligonos (ejemplo recuentos de animales del juego áreas de manejo).
 
 A menudo, los datos ecológicos recopilados en los polígonos cercanos son más similares que los que están más lejos aparte debido a condiciones de hábitat similares, procesos como la migración o dispersión.
 
-Por ejemplo, conteos de animales más altos u ocupación a menudo forman espacio grupos en el paisaje (Thogmartin et al. 2004,Broms y col. 2014, Poley et al. 2014), medida de la plantaLos elementos de un conjunto de parcelas pueden estar modelados espacialmente(Agarwal et al. 2005, Bullock y Burkhart 2005,Huang y col. 2013), o la diversidad global de especies puede exhibirpatrones geográficos de bits cuando se representa como un gruesocuadrícula de escala (Tognelli y Kelt 2004, Pedersen et al. 2014).Para estos tipos de datos espaciales, la información espacial puede ser codificado utilizando barrios, lo que conduce a espacialmodelos autorregresivos (Lichstein et al. 2002). Los modelos autoregresivos espaciales más comunes son los autorregresivo opcional (CAR) y autorregresivo simultáneomodelos gressive (SAR) (Haining 1990, Cressie 1993).
+Por ejemplo, conteos de animales más altos u ocupación a menudo forman espacio grupos en el paisaje (Thogmartin et al. 2004,Broms y col. 2014, Poley et al. 2014), medida de la planta Los elementos de un conjunto de parcelas pueden estar modelados espacialmente(Agarwal et al. 2005, Bullock y Burkhart 2005,Huang y col. 2013), o la diversidad global de especies puede exhibir patrones geográficos de bits cuando se representa como un grueso cuadrícula de escala (Tognelli y Kelt 2004, Pedersen et al. 2014).Para estos tipos de datos espaciales, la información espacial puede ser codificado utilizando barrios, lo que conduce a espacial modelos autorregresivos (Lichstein et al. 2002). Los modelos autoregresivos espaciales más comunes son los autorregresivo opcional (CAR) y autorregresivo simultáneomodelos gressive (SAR) (Haining 1990, Cressie 1993).
 
-Los modelos autorregresivos y SAR condicionales forman ungran clase de modelos estadísticos espaciales. Datos ecológicos a menudo exhiben un patrón espacial, y mientras CAR y SAR los modelos se han usado en ecología, deberían usarse más a menudo. Nuestro objetivo es revisar CAR y SARmodelos de manera práctica, para que su potencial pueda sermás plenamente realizado y utilizado por los ecologistas, y comenzamos con una visión general de sus múltiples usos
+Los modelos autorregresivos y SAR condicionales forman un gran clase de modelos estadísticos espaciales. Datos ecológicos a menudo exhiben un patrón espacial, y mientras CAR y SAR los modelos se han usado en ecología, deberían usarse más a menudo. Nuestro objetivo es revisar CAR y SAR modelos de manera práctica, para que su potencial pueda ser más plenamente realizado y utilizado por los ecologistas, y comenzamos con una visión general de sus múltiples usos
 
 **Inferencia**
 
-<7>    Cuando la autocorrelación espacial es explicada por I Moran
+Cuando la autocorrelación espacial es explicada por I Moran
 
 
 Primero, debe existir autocorrelación espacial para utilizar los modelos CAR y SAR.
@@ -101,8 +101,8 @@ Modelos estadísticos están definidos por la distancia real (Matriz de varianza
 Nuestros objetivos son como sigue: 
     (1) para explicar cómo se obtienen estos modelos, 
     (2)proporcionar información e intuición sobre cómo funcionan, 
-    (3) paracomparar los modelos CAR y SAR, 
-    (4) proporcionar prácticaspautas para su uso. Usando foca de puerto (Phoca vit-ulina) tendencias, proporcionamos un ejemplo para más Ilustración de los objetivos dados en la Tabla 1. 
+    (3) para comparar los modelos CAR y SAR, 
+    (4) proporcionar prácticas pautas para su uso. Usando foca de puerto (Phoca vit-ulina) tendencias, proporcionamos un ejemplo para más Ilustración de los objetivos dados en la Tabla 1. 
 
 Luego discutir temas importantes que han recibido poca atenciónción hasta ahora. 
 
